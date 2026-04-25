@@ -6,9 +6,14 @@ interface Props {
   round: Round;
   dist: Array<[TeamCode, number]>;
   fallback?: string | null;
+  /**
+   * Which round level the calculation is using as the source of truth.
+   * Drives the small "With this Rxx:" label above the list.
+   */
+  leafLevel?: Round | null;
 }
 
-export function ResolvedOpponent({ round, dist, fallback }: Props) {
+export function ResolvedOpponent({ round, dist, fallback, leafLevel }: Props) {
   return (
     <div className="border-l-2 border-blue-200 pl-3 min-w-[200px]">
       <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">
@@ -22,17 +27,24 @@ export function ResolvedOpponent({ round, dist, fallback }: Props) {
           <span className="font-medium">{TEAM_BY_CODE[dist[0][0]].name}</span>
         </div>
       ) : (
-        <ul className="space-y-1">
-          {dist.map(([code, p]) => (
-            <li key={code} className="flex items-center gap-2 text-xs">
-              <FlagImg code={code} />
-              <span className="flex-1">{TEAM_BY_CODE[code].name}</span>
-              <span className="font-mono text-gray-700 font-semibold">
-                {(p * 100).toFixed(p < 0.1 ? 1 : 0)}%
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          {leafLevel && (
+            <div className="text-[10px] text-blue-700 font-medium italic mb-1">
+              With this {leafLevel}:
+            </div>
+          )}
+          <ul className="space-y-1">
+            {dist.map(([code, p]) => (
+              <li key={code} className="flex items-center gap-2 text-xs">
+                <FlagImg code={code} />
+                <span className="flex-1">{TEAM_BY_CODE[code].name}</span>
+                <span className="font-mono text-gray-700 font-semibold">
+                  {(p * 100).toFixed(p < 0.1 ? 1 : 0)}%
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

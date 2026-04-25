@@ -251,7 +251,6 @@ export default function App() {
           thirdsOptions={thirdsOptions}
           onThirdChange={handleThirdChange}
           resolvedR32={r32Match}
-          onToggleEstimatedOdds={(v) => setS({ useEstimatedOdds: v })}
           scenarioName={scenario.scenarioName}
           onNameChange={(v) => setS({ scenarioName: v })}
           onSave={handleSave}
@@ -289,7 +288,6 @@ export default function App() {
                       opponentFeederRoot={opponentFeederRoots[r]}
                       placements={scenario.placements}
                       odds={scenario.odds}
-                      useEstimatedOdds={scenario.useEstimatedOdds}
                       onClear={handleClear}
                       onOddsChange={handleOddsChange}
                       draggedTeam={draggedTeam}

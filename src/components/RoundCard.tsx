@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { MATCHES, ROUND_LABEL, TREE, slotLabel } from '../data/bracket';
-import { computeWinnerDistribution, sortedDist } from '../logic/probability';
+import { computeWinnerDistribution, determineLeafLevel, sortedDist } from '../logic/probability';
 import type { Match, MatchId, Round, SlotSide, TeamCode } from '../types';
 import { MatchBox } from './MatchBox';
 import { OpponentFeederTree } from './OpponentFeederTree';
@@ -15,7 +15,6 @@ interface Props {
   opponentFeederRoot: MatchId | null;
   placements: Record<string, TeamCode>;
   odds: Record<MatchId, string>;
-  useEstimatedOdds: boolean;
   onClear: (matchId: MatchId, side: SlotSide) => void;
   onOddsChange: (matchId: MatchId, value: string) => void;
   draggedTeam: TeamCode | null;
@@ -37,7 +36,7 @@ function r32Fallback(
 
 export function RoundCard({
   round, roundMatchId, analyzedTeam, analyzedSide, opponentFeederRoot,
-  placements, odds, useEstimatedOdds, onClear, onOddsChange, draggedTeam,
+  placements, odds, onClear, onOddsChange, draggedTeam,
 }: Props) {
   const m = MATCHES[roundMatchId];
 
@@ -49,10 +48,17 @@ export function RoundCard({
       if (placed) dist.set(placed, 1);
       return dist;
     } else if (opponentFeederRoot) {
-      return computeWinnerDistribution(opponentFeederRoot, placements, odds, useEstimatedOdds);
+      return computeWinnerDistribution(opponentFeederRoot, placements, odds);
     }
     return new Map<TeamCode, number>();
-  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds, useEstimatedOdds]);
+  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds]);
+
+  // Which round level is the opponent calculation actually using?
+  // Drives the "With this R32:" / "With this R16:" label in ResolvedOpponent.
+  const leafLevel = useMemo(() => {
+    if (round === 'R32' || !opponentFeederRoot) return null;
+    return determineLeafLevel(opponentFeederRoot, placements);
+  }, [round, opponentFeederRoot, placements]);
 
   const sortedOpp = useMemo(() => sortedDist(opponentDist), [opponentDist]);
 
@@ -111,14 +117,13 @@ export function RoundCard({
                   rootId={opponentFeederRoot}
                   placements={placements}
                   odds={odds}
-                  useEstimatedOdds={useEstimatedOdds}
                   draggedTeam={draggedTeam}
                   onClear={onClear}
                   onOddsChange={onOddsChange}
                 />
               )}
             </div>
-            <ResolvedOpponent round={round} dist={sortedOpp} fallback={null} />
+            <ResolvedOpponent round={round} dist={sortedOpp} fallback={null} leafLevel={leafLevel} />
           </div>
         )}
       </div>
