@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-gray-100 text-gray-900 antialiased;
+    overscroll-behavior: none;
+  }
+  /* Disable text selection on UI chrome (slot labels, buttons) so dragging feels right */
+  button, .no-select {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+@layer components {
+  .flag-img {
+    @apply inline-block rounded-sm shadow-sm;
+    width: 22px;
+    height: 16px;
+    object-fit: cover;
+    pointer-events: none;          /* route touch to draggable wrapper, not image */
+    -webkit-user-drag: none;       /* prevent native iOS image drag */
+  }
+  .flag-img-md {
+    @apply inline-block rounded-sm shadow-sm;
+    width: 25px;
+    height: 18px;
+    object-fit: cover;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+  .flag-img-lg {
+    @apply inline-block rounded-sm shadow-sm;
+    width: 28px;
+    height: 20px;
+    object-fit: cover;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+  /* Suppress iOS Safari's long-press "Save image / Share" context menu, which
+     fires before @dnd-kit's touch activation delay completes. Apply to every
+     draggable wrapper. Without this, long-press drag is unusable on iOS. */
+  .no-callout {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .slot-base {
+    @apply transition-colors duration-150;
+  }
+  .slot-empty {
+    @apply bg-gray-50 border border-dashed border-gray-300;
+  }
+  .slot-filled {
+    @apply bg-white border border-gray-300;
+  }
+  .slot-eligible {
+    @apply !bg-blue-50 !border-dashed !border-blue-500;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  }
+  .slot-flash-bad {
+    animation: flashbad 0.4s;
+  }
+}
+
+/* Hide scrollbar in horizontally scrollable areas but keep functionality */
+.scrollable-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.scrollable-x::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollable-x::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}

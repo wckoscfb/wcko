@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.env
+.env.local
+.env.production
+
+# TypeScript build artifacts (regenerate on every `tsc -b`)
+*.tsbuildinfo
+
+# Auto-emitted from vite.config.ts by `tsc -b` — Vite uses the .ts source directly
+vite.config.d.ts
+vite.config.js
