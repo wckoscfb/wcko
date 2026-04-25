@@ -26,7 +26,15 @@ export function RoundMatchBox({ matchId, analyzedTeam, analyzedSide, opponentDis
         <>
           <FlagImg code={analyzedTeam} />
           <span className="flex-1 truncate font-medium">{TEAM_BY_CODE[analyzedTeam].name}</span>
-          <span className="text-[10px] text-gray-400">(you)</span>
+          <span
+            className="text-blue-600 flex-shrink-0"
+            title="Your analyzed team — locked across every round"
+            aria-label="Your team — locked"
+          >
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+            </svg>
+          </span>
         </>
       );
     } else if (opponentDist.length === 0) {
@@ -49,7 +57,7 @@ export function RoundMatchBox({ matchId, analyzedTeam, analyzedSide, opponentDis
           <FlagImg code={topCode} />
           <span className="flex-1 truncate text-gray-700">{teamName}</span>
           <span
-            className="text-base font-bold text-blue-700 tabular-nums leading-none"
+            className="text-sm font-bold text-blue-700 tabular-nums leading-none"
             title={tooltip}
             aria-label={tooltip}
           >

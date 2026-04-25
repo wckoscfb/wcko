@@ -82,7 +82,15 @@ function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked }: Slo
             <span className="flex-1 truncate">{TEAM_BY_CODE[placed].name}</span>
           </div>
           {isLocked ? (
-            <span className="text-[10px] text-blue-600 font-semibold">YOU</span>
+            <span
+              className="text-blue-600 flex-shrink-0"
+              title="Your analyzed team — locked across every round"
+              aria-label="Your team — locked"
+            >
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+              </svg>
+            </span>
           ) : (
             <button
               onClick={() => onClear(matchId, side)}

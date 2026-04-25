@@ -55,7 +55,7 @@ export function ResolvedOpponent({ round, dist, fallback, leafLevel }: Props) {
               <li key={code} className="flex items-center gap-2 text-xs">
                 <FlagImg code={code} />
                 <span className="flex-1">{TEAM_BY_CODE[code].name}</span>
-                <span className="font-mono text-gray-700 font-semibold">
+                <span className="font-mono text-blue-700 font-bold tabular-nums">
                   {(p * 100).toFixed(p < 0.1 ? 1 : 0)}%
                 </span>
               </li>
@@ -67,7 +67,7 @@ export function ResolvedOpponent({ round, dist, fallback, leafLevel }: Props) {
               >
                 <span className="w-[22px] text-center">…</span>
                 <span className="flex-1">+{otherCount} other team{otherCount > 1 ? 's' : ''}</span>
-                <span className="font-mono">{(otherSum * 100).toFixed(otherSum < 0.1 ? 1 : 0)}%</span>
+                <span className="font-mono text-blue-700 tabular-nums">{(otherSum * 100).toFixed(otherSum < 0.1 ? 1 : 0)}%</span>
               </li>
             )}
           </ul>
