@@ -13,6 +13,12 @@ on:
 permissions:
   contents: write
 
+# Opt into the new Node 24 runtime for action internals — silences the
+# "Node 20 actions are deprecated" warning. Doesn't change which Node version
+# our refresh-odds script runs on (that's set explicitly in setup-node below).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -23,7 +29,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22  # current LTS as of mid-2026
 
       - name: Refresh odds
         env:
