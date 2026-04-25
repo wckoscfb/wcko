@@ -32,7 +32,7 @@ export function EmptyState({ onTeamPick }: EmptyStateProps) {
         <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3 text-center">
           Quick start with a favourite
         </div>
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {QUICK_START_TEAMS.map(code => {
             const team = TEAM_BY_CODE[code];
             return (
