@@ -136,6 +136,16 @@ export function RoundCard({
                 analyzedSide={analyzedSide}
                 opponentDist={sortedOpp}
                 round={round}
+                opponentFeederRoot={opponentFeederRoot}
+                draggedTeam={draggedTeam}
+                showHint={
+                  // Light up the opponent slot's hint only if it IS the
+                  // first-empty slot in the page. The slot is "empty" when
+                  // the opponent isn't deterministic, so we let the hint
+                  // appear for any non-determined opponent slot the App
+                  // points us to.
+                  hintSlotKey === `oppslot:${roundMatchId}`
+                }
               />
               {survivalChain && (
                 <PathSurvival round={round} survivalChain={survivalChain} analyzedTeam={analyzedTeam} />

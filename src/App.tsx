@@ -191,10 +191,46 @@ export default function App() {
     if (!over) return;
 
     const team = active.data.current?.team as TeamCode | undefined;
-    const target = over.data.current as { matchId?: MatchId; side?: SlotSide } | undefined;
-    if (!team || !target?.matchId || !target.side) return;
+    const target = over.data.current as {
+      kind?: 'oppslot';
+      matchId?: MatchId;
+      side?: SlotSide;
+      roundMatchId?: MatchId;
+    } | undefined;
+    if (!team) return;
 
-    const { matchId, side } = target;
+    // R16+ "your match" opponent slot: resolve to a specific R32 leaf in the
+    // opponent feeder subtree where this team's group / finish position fits.
+    let matchId = target?.matchId;
+    let side = target?.side;
+    if (target?.kind === 'oppslot' && target.roundMatchId && opponentFeederRoots) {
+      // Find which round this round-match belongs to
+      let feederRoot: MatchId | null = null;
+      for (const r of ROUND_ORDER) {
+        if (roundMatches?.[r] === target.roundMatchId) {
+          feederRoot = opponentFeederRoots[r] ?? null;
+          break;
+        }
+      }
+      if (!feederRoot) return;
+      // Walk R32 leaves in the feeder subtree, pick the first eligible (matchId, side)
+      const subtree = collectSubtreeByRound(feederRoot);
+      let resolved: { matchId: MatchId; side: SlotSide } | null = null;
+      for (const leafMid of [...subtree.R32].sort()) {
+        for (const s of ['A', 'B'] as const) {
+          if (eligibleForMatchSide(leafMid, s).has(team)) {
+            resolved = { matchId: leafMid, side: s };
+            break;
+          }
+        }
+        if (resolved) break;
+      }
+      if (!resolved) return;
+      matchId = resolved.matchId;
+      side = resolved.side;
+    }
+
+    if (!matchId || !side) return;
 
     // Check eligibility (defense in depth — useDroppable should already filter)
     if (!eligibleForMatchSide(matchId, side).has(team)) return;
@@ -225,7 +261,7 @@ export default function App() {
       placements[key] = team;
       return { ...prev, placements };
     });
-  }, [r32Match, scenario.analyzedTeam, setS]);
+  }, [r32Match, scenario.analyzedTeam, setS, opponentFeederRoots, roundMatches]);
 
   const handleDragCancel = useCallback(() => setDraggedTeam(null), []);
 
