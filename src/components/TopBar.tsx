@@ -60,7 +60,13 @@ export function TopBar({
           height="32"
           className="w-8 h-8 rounded-md flex-shrink-0"
         />
-        <span className="font-bold text-base hidden sm:inline">WCKO</span>
+        <span
+          className="font-extrabold text-lg hidden sm:inline tracking-tight"
+          style={{
+            color: '#1e3a8a',
+            WebkitTextStroke: '0.6px #10b981',
+          }}
+        >WCKO</span>
       </button>
       <select
         value={scenario.analyzedTeam || ''}

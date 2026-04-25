@@ -1,4 +1,5 @@
-import type { TeamCode } from '../types';
+import type { GroupLetter, TeamCode } from '../types';
+import { GROUPS } from './teams';
 
 /**
  * Editorial pre-tournament estimates of each team's probability of winning the
@@ -87,4 +88,99 @@ export function bradleyTerryTopWins(topTeam: TeamCode, botTeam: TeamCode): numbe
   // (which would short-circuit the probability propagation in suspicious ways)
   const clamped = Math.max(0.01, Math.min(0.99, p));
   return Math.round(clamped * 100);
+}
+
+/**
+ * Analytical group-stage simulation: for a 4-team group, enumerate all 2^6 = 64
+ * possible match outcomes (no draws — the BT model is binary). For each
+ * outcome, compute per-team wins and rank, then accumulate the probability
+ * each team finishes 3°.
+ *
+ * Per-match probabilities come from Bradley-Terry on WC_WIN_PROB. Tiebreakers
+ * for equal wins use WCP (proxy for goal difference). Result is cached per
+ * group letter — only ever computed 12 times across the app's lifetime.
+ *
+ * This is much more accurate than a rank-based heuristic because it correctly
+ * models situations like "very strong team in a weak group" (the strong team
+ * almost never finishes 3°) vs "evenly matched group" (3° distribution closer
+ * to uniform).
+ */
+const _thirdPlaceCache = new Map<GroupLetter, Map<TeamCode, number>>();
+
+export function thirdPlaceProbabilities(groupLetter: GroupLetter): Map<TeamCode, number> {
+  const cached = _thirdPlaceCache.get(groupLetter);
+  if (cached) return cached;
+
+  const teams = GROUPS[groupLetter];
+  // 6 matches in a 4-team round-robin: pairs (i, j) with i < j
+  const matches: Array<[number, number]> = [];
+  for (let i = 0; i < 4; i++) {
+    for (let j = i + 1; j < 4; j++) matches.push([i, j]);
+  }
+
+  // Per-match BT probability that team i beats team j
+  const matchProbs = matches.map(([i, j]) => {
+    const bt = bradleyTerryTopWins(teams[i], teams[j]);
+    return bt !== null ? bt / 100 : 0.5;
+  });
+
+  const result = new Map<TeamCode, number>(teams.map(t => [t, 0]));
+
+  // Enumerate all 2^6 = 64 outcomes
+  const numOutcomes = 1 << matches.length;
+  for (let outcome = 0; outcome < numOutcomes; outcome++) {
+    let outcomeProb = 1;
+    const wins = [0, 0, 0, 0];
+    for (let m = 0; m < matches.length; m++) {
+      const [i, j] = matches[m];
+      const iWon = (outcome >> m) & 1;
+      if (iWon) {
+        wins[i]++;
+        outcomeProb *= matchProbs[m];
+      } else {
+        wins[j]++;
+        outcomeProb *= 1 - matchProbs[m];
+      }
+    }
+    // Determine 3rd-place finisher: sort indices by wins desc, WCP desc as tiebreak
+    const indices = [0, 1, 2, 3];
+    indices.sort((a, b) => {
+      if (wins[b] !== wins[a]) return wins[b] - wins[a];
+      return (WC_WIN_PROB[teams[b]] ?? 0) - (WC_WIN_PROB[teams[a]] ?? 0);
+    });
+    const thirdPlaceTeam = teams[indices[2]];
+    result.set(thirdPlaceTeam, (result.get(thirdPlaceTeam) ?? 0) + outcomeProb);
+  }
+
+  _thirdPlaceCache.set(groupLetter, result);
+  return result;
+}
+
+/**
+ * Estimated candidate distribution for an EMPTY R32 thirds slot specified as
+ * "3° from {groups}". Each team's probability of being the actual 3° finisher
+ * who lands in this slot:
+ *
+ *   P(team T) = (1 / numEligibleGroups) × P(T finishes 3° in T's group)
+ *
+ * The (1/N) weight assumes all eligible groups are equally likely to be the
+ * source for this slot — a simplification of FIFA's actual allocation rule
+ * (which depends on the global ranking of all 12 group-3° finishers), but
+ * close enough for the math to give realistic per-team probabilities.
+ *
+ * The within-group probability comes from `thirdPlaceProbabilities`, which is
+ * a real BT-driven group-stage simulation, NOT a rank heuristic.
+ */
+export function thirdsCandidateDistribution(groups: GroupLetter[]): Map<TeamCode, number> {
+  const dist = new Map<TeamCode, number>();
+  const N = groups.length;
+  if (N === 0) return dist;
+  const slotShare = 1 / N;
+  for (const g of groups) {
+    const groupDist = thirdPlaceProbabilities(g);
+    for (const [team, p] of groupDist) {
+      dist.set(team, (dist.get(team) ?? 0) + slotShare * p);
+    }
+  }
+  return dist;
 }

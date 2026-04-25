@@ -1,5 +1,5 @@
 import { MATCHES, ROUND_OF, ROUND_ORDER } from '../data/bracket';
-import { bradleyTerryTopWins } from '../data/odds';
+import { bradleyTerryTopWins, thirdsCandidateDistribution } from '../data/odds';
 import { collectSubtreeByRound } from './paths';
 import type { Match, MatchId, Round, SlotSpec, TeamCode, WinnerDist } from '../types';
 
@@ -82,6 +82,14 @@ function computeAtLevel(
     // winnerOf. Lets partial higher-round placements be respected — e.g. user
     // placed Brazil at G93.A but left G93.B empty: top = {Brazil:1},
     // bot = propagation of G84.
+    //
+    // For empty `thirds` slots specifically: rather than treating the slot as
+    // "no one is here" (which would make 1° vs empty-3° auto-resolve to 100%
+    // for the 1° team), we estimate the unknown 3° finisher as a uniform
+    // distribution over all teams in the eligible groups. Bradley-Terry then
+    // computes per-matchup odds against the placed 1° team. Realistic: a 1°
+    // team facing an unknown 3° usually wins 70-90% (not 100%), and the small
+    // upset chance gets distributed across the eligible 3° candidates.
     function distFor(slot: SlotSpec, slotKey: string): WinnerDist {
       const placed = placements[slotKey];
       if (placed) return new Map([[placed, 1]]);
@@ -89,6 +97,11 @@ function computeAtLevel(
         const upstream = computeAtLevel(slot.matchId, placements, odds, leafLevel);
         if (upstream.size > 0) return upstream;
         return new Map();
+      }
+      if (slot.kind === 'thirds') {
+        // Realistic estimate: rank-based per-group 3°-finish probability
+        // (strong teams almost never finish 3°, the 3rd-strongest most often does).
+        return thirdsCandidateDistribution(slot.groups);
       }
       return new Map();
     }
