@@ -5,6 +5,7 @@ import { computeWinnerDistribution, determineLeafLevel, sortedDist } from '../lo
 import type { Match, MatchId, Round, SlotSide, TeamCode } from '../types';
 import { MatchBox } from './MatchBox';
 import { OpponentFeederTree } from './OpponentFeederTree';
+import { PathSurvival } from './PathSurvival';
 import { ResolvedOpponent } from './ResolvedOpponent';
 import { RoundMatchBox } from './RoundMatchBox';
 
@@ -16,6 +17,7 @@ interface Props {
   opponentFeederRoot: MatchId | null;
   placements: Record<string, TeamCode>;
   odds: Record<MatchId, string>;
+  survivalChain: Record<Round, number> | null;
   onClear: (matchId: MatchId, side: SlotSide) => void;
   onOddsChange: (matchId: MatchId, value: string) => void;
   draggedTeam: TeamCode | null;
@@ -37,7 +39,7 @@ function r32Fallback(
 
 export function RoundCard({
   round, roundMatchId, analyzedTeam, analyzedSide, opponentFeederRoot,
-  placements, odds, onClear, onOddsChange, draggedTeam,
+  placements, odds, survivalChain, onClear, onOddsChange, draggedTeam,
 }: Props) {
   const m = MATCHES[roundMatchId];
 
@@ -88,7 +90,7 @@ export function RoundCard({
       <div className="px-3 sm:px-4 py-3">
         {round === 'R32' ? (
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
-            <div>
+            <div className="lg:w-48 flex-shrink-0">
               <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">Your match</div>
               <MatchBox
                 matchId={roundMatchId}
@@ -100,6 +102,19 @@ export function RoundCard({
                 showOdds={false}
                 lockedSlot={analyzedSide}
               />
+              {survivalChain && (
+                <PathSurvival round={round} survivalChain={survivalChain} analyzedTeam={analyzedTeam} />
+              )}
+            </div>
+            {/* Middle column on desktop — pushes the resolved-opponent panel
+                to the right edge so layout matches the higher rounds. Hidden
+                on mobile to save vertical space. */}
+            <div className="hidden lg:block min-w-0 flex-1 pt-4">
+              <p className="text-xs text-gray-500 leading-relaxed max-w-md">
+                Drag a specific team into the opponent slot to lock in a
+                match-up. Otherwise the panel shows the most likely opponents
+                based on group-stage simulation.
+              </p>
             </div>
             <ResolvedOpponent
               round={round}
@@ -109,7 +124,7 @@ export function RoundCard({
           </div>
         ) : (
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-            <div>
+            <div className="lg:w-48 flex-shrink-0">
               <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">Your match</div>
               <RoundMatchBox
                 matchId={roundMatchId}
@@ -117,6 +132,9 @@ export function RoundCard({
                 analyzedSide={analyzedSide}
                 opponentDist={sortedOpp}
               />
+              {survivalChain && (
+                <PathSurvival round={round} survivalChain={survivalChain} analyzedTeam={analyzedTeam} />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">

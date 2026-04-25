@@ -201,3 +201,74 @@ export function matchIsOneVsThird(matchId: MatchId): boolean {
     (m.B.kind === 'group' && m.B.pos === 1 && m.A.kind === 'thirds')
   );
 }
+
+/**
+ * The opponent distribution at round-N for the analyzed team. Same logic that
+ * RoundCard uses to display "QF opponent" etc., extracted so it can also feed
+ * the survival-chain calculation.
+ */
+export function computeRoundNOpponentDist(
+  round: Round,
+  roundMatchId: MatchId,
+  analyzedSide: 'A' | 'B',
+  opponentFeederRoot: MatchId | null,
+  placements: Record<string, TeamCode>,
+  odds: Record<MatchId, string>,
+): WinnerDist {
+  if (round === 'R32') {
+    const oppSide: 'A' | 'B' = analyzedSide === 'A' ? 'B' : 'A';
+    const placed = placements[`${roundMatchId}.${oppSide}`];
+    if (placed) return new Map([[placed, 1]]);
+    const slot = MATCHES[roundMatchId][oppSide];
+    if (slot.kind === 'group') {
+      return positionProbabilities(slot.group, slot.pos as 1 | 2);
+    }
+    if (slot.kind === 'thirds') {
+      return thirdsCandidateDistribution(slot.groups);
+    }
+    return new Map();
+  }
+  if (opponentFeederRoot) {
+    return computeWinnerDistribution(opponentFeederRoot, placements, odds);
+  }
+  return new Map();
+}
+
+/**
+ * P(team beats expected opponent at round N), given they reach round N.
+ * Computed as the expectation of Bradley-Terry across the opponent distribution.
+ */
+function expectedWinProb(team: TeamCode, oppDist: WinnerDist): number {
+  if (oppDist.size === 0) return 0;
+  let p = 0;
+  for (const [opp, w] of oppDist) {
+    const bt = bradleyTerryTopWins(team, opp);
+    p += w * (bt !== null ? bt / 100 : 0.5);
+  }
+  return p;
+}
+
+/**
+ * Per-round win probabilities (independent — each is "probability the team
+ * wins THIS round given they're in it"). Cumulative survival is
+ * sum/product of these — see RoundCard for the chain display.
+ */
+export function computeSurvivalChain(
+  analyzedTeam: TeamCode,
+  roundMatches: Record<Round, MatchId>,
+  analyzedSideAt: (matchId: MatchId) => 'A' | 'B',
+  opponentFeederRoots: Record<Round, MatchId | null>,
+  placements: Record<string, TeamCode>,
+  odds: Record<MatchId, string>,
+): Record<Round, number> {
+  const result: Partial<Record<Round, number>> = {};
+  for (const r of ROUND_ORDER) {
+    const matchId = roundMatches[r];
+    const side = analyzedSideAt(matchId);
+    const oppDist = computeRoundNOpponentDist(
+      r, matchId, side, opponentFeederRoots[r], placements, odds,
+    );
+    result[r] = expectedWinProb(analyzedTeam, oppDist);
+  }
+  return result as Record<Round, number>;
+}

@@ -27,6 +27,7 @@ import {
   getRoundMatches,
   resolveR32,
 } from './logic/paths';
+import { computeSurvivalChain } from './logic/probability';
 import { defaultScenario } from './state/scenario';
 import { getScenarioFromUrl } from './state/shareLink';
 import { loadAllScenarios, saveAllScenarios } from './state/storage';
@@ -98,6 +99,22 @@ export default function App() {
     }
     return out as Record<Round, MatchId | null>;
   }, [roundMatches, analyzedPath]);
+
+  // Per-round win probability — drives the "From here, X% to reach R16…" panel
+  const survivalChain = useMemo(() => {
+    if (!scenario.analyzedTeam || !roundMatches || !opponentFeederRoots) return null;
+    return computeSurvivalChain(
+      scenario.analyzedTeam,
+      roundMatches,
+      (matchId) => getAnalyzedSideAt(matchId, analyzedPath, r32Match),
+      opponentFeederRoots,
+      scenario.placements,
+      scenario.odds,
+    );
+  }, [
+    scenario.analyzedTeam, roundMatches, opponentFeederRoots, analyzedPath, r32Match,
+    scenario.placements, scenario.odds,
+  ]);
 
   // Auto-place analyzed team in their R32 slot whenever the slot changes
   useEffect(() => {
@@ -288,6 +305,7 @@ export default function App() {
                       opponentFeederRoot={opponentFeederRoots[r]}
                       placements={scenario.placements}
                       odds={scenario.odds}
+                      survivalChain={survivalChain}
                       onClear={handleClear}
                       onOddsChange={handleOddsChange}
                       draggedTeam={draggedTeam}
