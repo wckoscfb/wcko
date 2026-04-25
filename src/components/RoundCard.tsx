@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { MATCHES, ROUND_LABEL, TREE, slotLabel } from '../data/bracket';
+import { positionProbabilities, thirdsCandidateDistribution } from '../data/odds';
 import { computeWinnerDistribution, determineLeafLevel, sortedDist } from '../logic/probability';
 import type { Match, MatchId, Round, SlotSide, TeamCode } from '../types';
 import { MatchBox } from './MatchBox';
@@ -44,14 +45,23 @@ export function RoundCard({
     if (round === 'R32') {
       const oppSide: SlotSide = analyzedSide === 'A' ? 'B' : 'A';
       const placed = placements[`${roundMatchId}.${oppSide}`];
-      const dist = new Map<TeamCode, number>();
-      if (placed) dist.set(placed, 1);
-      return dist;
+      if (placed) return new Map<TeamCode, number>([[placed, 1]]);
+      // Empty opponent slot — use the same simulation we use everywhere else:
+      // 2°X / 1°X → positionProbabilities for that group;
+      // 3°{...} → thirdsCandidateDistribution across eligible groups.
+      const slot = m[oppSide];
+      if (slot.kind === 'group') {
+        return positionProbabilities(slot.group, slot.pos as 1 | 2);
+      }
+      if (slot.kind === 'thirds') {
+        return thirdsCandidateDistribution(slot.groups);
+      }
+      return new Map<TeamCode, number>();
     } else if (opponentFeederRoot) {
       return computeWinnerDistribution(opponentFeederRoot, placements, odds);
     }
     return new Map<TeamCode, number>();
-  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds]);
+  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds, m]);
 
   // Which round level is the opponent calculation actually using?
   // Drives the "With this R32:" / "With this R16:" label in ResolvedOpponent.
