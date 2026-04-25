@@ -7,13 +7,14 @@ interface Props {
   rootId: MatchId;
   placements: Record<string, TeamCode>;
   odds: Record<MatchId, string>;
+  useEstimatedOdds: boolean;
   draggedTeam: TeamCode | null;
   onClear: (matchId: MatchId, side: 'A' | 'B') => void;
   onOddsChange: (matchId: MatchId, value: string) => void;
 }
 
 export function OpponentFeederTree({
-  rootId, placements, odds, draggedTeam, onClear, onOddsChange,
+  rootId, placements, odds, useEstimatedOdds, draggedTeam, onClear, onOddsChange,
 }: Props) {
   const byRound = collectSubtreeByRound(rootId);
   const cols = ROUND_ORDER.filter(r => byRound[r].length > 0);
@@ -32,6 +33,7 @@ export function OpponentFeederTree({
                 matchId={mid}
                 placements={placements}
                 odds={odds}
+                useEstimatedOdds={useEstimatedOdds}
                 draggedTeam={draggedTeam}
                 onClear={onClear}
                 onOddsChange={onOddsChange}

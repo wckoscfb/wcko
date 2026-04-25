@@ -10,6 +10,7 @@ interface Props {
   thirdsOptions: R32SlotPosition[];
   onThirdChange: (matchId: MatchId) => void;
   resolvedR32: R32SlotPosition | null;
+  onToggleEstimatedOdds: (value: boolean) => void;
   scenarioName: string;
   onNameChange: (v: string) => void;
   onSave: () => void;
@@ -22,6 +23,7 @@ interface Props {
 export function TopBar({
   scenario, onTeamChange, onFinishChange,
   thirdsOptions, onThirdChange, resolvedR32,
+  onToggleEstimatedOdds,
   scenarioName, onNameChange,
   onSave, onLoad, onDelete, onClear,
   savedNames,
@@ -111,6 +113,19 @@ export function TopBar({
         onClick={onClear}
         className="px-2 py-1 text-xs text-gray-600 border rounded hover:bg-gray-50"
       >Reset</button>
+
+      <label
+        className="flex items-center gap-1.5 px-2 py-1 text-xs border rounded cursor-pointer select-none hover:bg-gray-50"
+        title="When ON, unset matches use estimated odds based on team strength (live bookmaker consensus). When OFF, only your manually-typed odds count and unset matches default to 50/50."
+      >
+        <input
+          type="checkbox"
+          checked={scenario.useEstimatedOdds}
+          onChange={(e) => onToggleEstimatedOdds(e.target.checked)}
+          className="w-3.5 h-3.5"
+        />
+        <span>Auto-estimate odds</span>
+      </label>
 
       <div className="ml-auto flex items-center gap-2 flex-wrap">
         <button

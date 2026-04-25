@@ -17,6 +17,7 @@ interface Props {
   opponentFeederRoot: MatchId | null;
   placements: Record<string, TeamCode>;
   odds: Record<MatchId, string>;
+  useEstimatedOdds: boolean;
   survivalChain: Record<Round, number> | null;
   onClear: (matchId: MatchId, side: SlotSide) => void;
   onOddsChange: (matchId: MatchId, value: string) => void;
@@ -39,7 +40,7 @@ function r32Fallback(
 
 export function RoundCard({
   round, roundMatchId, analyzedTeam, analyzedSide, opponentFeederRoot,
-  placements, odds, survivalChain, onClear, onOddsChange, draggedTeam,
+  placements, odds, useEstimatedOdds, survivalChain, onClear, onOddsChange, draggedTeam,
 }: Props) {
   const m = MATCHES[roundMatchId];
 
@@ -48,9 +49,8 @@ export function RoundCard({
       const oppSide: SlotSide = analyzedSide === 'A' ? 'B' : 'A';
       const placed = placements[`${roundMatchId}.${oppSide}`];
       if (placed) return new Map<TeamCode, number>([[placed, 1]]);
-      // Empty opponent slot — use the same simulation we use everywhere else:
-      // 2°X / 1°X → positionProbabilities for that group;
-      // 3°{...} → thirdsCandidateDistribution across eligible groups.
+      // Empty opponent slot — only auto-estimate when toggle is ON.
+      if (!useEstimatedOdds) return new Map<TeamCode, number>();
       const slot = m[oppSide];
       if (slot.kind === 'group') {
         return positionProbabilities(slot.group, slot.pos as 1 | 2);
@@ -60,10 +60,10 @@ export function RoundCard({
       }
       return new Map<TeamCode, number>();
     } else if (opponentFeederRoot) {
-      return computeWinnerDistribution(opponentFeederRoot, placements, odds);
+      return computeWinnerDistribution(opponentFeederRoot, placements, odds, useEstimatedOdds);
     }
     return new Map<TeamCode, number>();
-  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds, m]);
+  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds, useEstimatedOdds, m]);
 
   // Which round level is the opponent calculation actually using?
   // Drives the "With this R32:" / "With this R16:" label in ResolvedOpponent.
@@ -96,6 +96,7 @@ export function RoundCard({
                 matchId={roundMatchId}
                 placements={placements}
                 odds={odds}
+                useEstimatedOdds={useEstimatedOdds}
                 draggedTeam={draggedTeam}
                 onClear={onClear}
                 onOddsChange={onOddsChange}
@@ -131,6 +132,7 @@ export function RoundCard({
                 analyzedTeam={analyzedTeam}
                 analyzedSide={analyzedSide}
                 opponentDist={sortedOpp}
+                round={round}
               />
               {survivalChain && (
                 <PathSurvival round={round} survivalChain={survivalChain} analyzedTeam={analyzedTeam} />
@@ -145,6 +147,7 @@ export function RoundCard({
                   rootId={opponentFeederRoot}
                   placements={placements}
                   odds={odds}
+                  useEstimatedOdds={useEstimatedOdds}
                   draggedTeam={draggedTeam}
                   onClear={onClear}
                   onOddsChange={onOddsChange}

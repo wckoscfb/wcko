@@ -53,9 +53,10 @@ export function computeWinnerDistribution(
   rootMatchId: MatchId,
   placements: Record<string, TeamCode>,
   odds: Record<MatchId, string>,
+  useEstimatedOdds: boolean = true,
 ): WinnerDist {
   const leafLevel = determineLeafLevel(rootMatchId, placements);
-  return computeAtLevel(rootMatchId, placements, odds, leafLevel);
+  return computeAtLevel(rootMatchId, placements, odds, leafLevel, useEstimatedOdds);
 }
 
 function computeAtLevel(
@@ -63,6 +64,7 @@ function computeAtLevel(
   placements: Record<string, TeamCode>,
   odds: Record<MatchId, string>,
   leafLevel: Round | null,
+  useEstimatedOdds: boolean,
 ): WinnerDist {
   const m = MATCHES[rootMatchId];
   const matchRound = ROUND_OF[rootMatchId];
@@ -94,19 +96,17 @@ function computeAtLevel(
       const placed = placements[slotKey];
       if (placed) return new Map([[placed, 1]]);
       if (slot.kind === 'winnerOf') {
-        const upstream = computeAtLevel(slot.matchId, placements, odds, leafLevel);
+        const upstream = computeAtLevel(slot.matchId, placements, odds, leafLevel, useEstimatedOdds);
         if (upstream.size > 0) return upstream;
         return new Map();
       }
+      // Group / thirds estimation only happens when auto-estimate is ON.
+      // Manual mode → empty slot contributes empty distribution.
+      if (!useEstimatedOdds) return new Map();
       if (slot.kind === 'thirds') {
-        // Realistic estimate: per-group 3°-finish probability from BT
-        // simulation (strong teams almost never finish 3°).
         return thirdsCandidateDistribution(slot.groups);
       }
       if (slot.kind === 'group') {
-        // Empty 1° or 2° group slot: estimate via per-position distribution
-        // from the same BT simulation. So an empty 1°L slot becomes
-        // "England 90%, Croatia 7%, Ghana 2%, Panama 1%" instead of nothing.
         return positionProbabilities(slot.group, slot.pos as 1 | 2);
       }
       return new Map();
@@ -115,7 +115,7 @@ function computeAtLevel(
     botDist = distFor(m.B, `${rootMatchId}.B`);
   }
 
-  return combineSlotDistributions(topDist, botDist, m, rootMatchId, odds);
+  return combineSlotDistributions(topDist, botDist, m, rootMatchId, odds, useEstimatedOdds);
 }
 
 function combineSlotDistributions(
@@ -124,6 +124,7 @@ function combineSlotDistributions(
   m: Match,
   matchId: MatchId,
   odds: Record<MatchId, string>,
+  useEstimatedOdds: boolean,
 ): WinnerDist {
   const topHas = topDist.size > 0;
   const botHas = botDist.size > 0;
@@ -151,19 +152,24 @@ function combineSlotDistributions(
 
       let topWinFrac: number;
       if (explicitTopWinPct !== null && !Number.isNaN(explicitTopWinPct)) {
-        // Explicit user odds: uniform across combinations
+        // Explicit user odds always win
         topWinFrac = explicitTopWinPct / 100;
-      } else {
-        // Bradley-Terry per matchup (the default)
+      } else if (useEstimatedOdds) {
+        // Bradley-Terry per matchup
         const bt = bradleyTerryTopWins(topTeam, botTeam);
         if (bt !== null) {
           topWinFrac = bt / 100;
         } else if (isOneVsThird) {
-          // BT couldn't compute (team missing from WC_WIN_PROB) — fall back to spec rule
           topWinFrac = oneIsTop ? 1 : 0;
         } else {
           topWinFrac = 0.5;
         }
+      } else if (isOneVsThird) {
+        // Manual mode but spec's 1°-vs-3° auto-resolve still applies
+        topWinFrac = oneIsTop ? 1 : 0;
+      } else {
+        // Manual mode, no estimate, default 50/50
+        topWinFrac = 0.5;
       }
       const botWinFrac = 1 - topWinFrac;
 
@@ -214,11 +220,13 @@ export function computeRoundNOpponentDist(
   opponentFeederRoot: MatchId | null,
   placements: Record<string, TeamCode>,
   odds: Record<MatchId, string>,
+  useEstimatedOdds: boolean = true,
 ): WinnerDist {
   if (round === 'R32') {
     const oppSide: 'A' | 'B' = analyzedSide === 'A' ? 'B' : 'A';
     const placed = placements[`${roundMatchId}.${oppSide}`];
     if (placed) return new Map([[placed, 1]]);
+    if (!useEstimatedOdds) return new Map();
     const slot = MATCHES[roundMatchId][oppSide];
     if (slot.kind === 'group') {
       return positionProbabilities(slot.group, slot.pos as 1 | 2);
@@ -229,7 +237,7 @@ export function computeRoundNOpponentDist(
     return new Map();
   }
   if (opponentFeederRoot) {
-    return computeWinnerDistribution(opponentFeederRoot, placements, odds);
+    return computeWinnerDistribution(opponentFeederRoot, placements, odds, useEstimatedOdds);
   }
   return new Map();
 }
@@ -260,13 +268,14 @@ export function computeSurvivalChain(
   opponentFeederRoots: Record<Round, MatchId | null>,
   placements: Record<string, TeamCode>,
   odds: Record<MatchId, string>,
+  useEstimatedOdds: boolean = true,
 ): Record<Round, number> {
   const result: Partial<Record<Round, number>> = {};
   for (const r of ROUND_ORDER) {
     const matchId = roundMatches[r];
     const side = analyzedSideAt(matchId);
     const oppDist = computeRoundNOpponentDist(
-      r, matchId, side, opponentFeederRoots[r], placements, odds,
+      r, matchId, side, opponentFeederRoots[r], placements, odds, useEstimatedOdds,
     );
     result[r] = expectedWinProb(analyzedTeam, oppDist);
   }

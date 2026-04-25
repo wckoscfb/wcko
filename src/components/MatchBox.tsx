@@ -12,6 +12,7 @@ export interface MatchBoxProps {
   matchId: MatchId;
   placements: Record<string, TeamCode>;
   odds: Record<MatchId, string>;
+  useEstimatedOdds?: boolean;
   draggedTeam: TeamCode | null;
   onClear: (matchId: MatchId, side: SlotSide) => void;
   onOddsChange: (matchId: MatchId, value: string) => void;
@@ -105,6 +106,7 @@ export function MatchBox({
   matchId,
   placements,
   odds,
+  useEstimatedOdds = true,
   draggedTeam,
   onClear,
   onOddsChange,
@@ -117,10 +119,10 @@ export function MatchBox({
   const oddsVal = odds[matchId];
   const isOneVsThird = matchIsOneVsThird(matchId);
 
-  // Bradley-Terry estimate shown as placeholder text whenever both slots are
-  // filled and both teams are in the WC win-probability table. The same value
-  // drives the actual computation when the user hasn't typed an explicit odds.
-  const estimatedOdds = topPlaced && botPlaced
+  // Bradley-Terry estimate shown as placeholder text — but only when the
+  // global auto-estimate toggle is ON. In manual mode, no placeholder shows
+  // and unset odds default to 50/50 in the math.
+  const estimatedOdds = useEstimatedOdds && topPlaced && botPlaced
     ? bradleyTerryTopWins(topPlaced, botPlaced)
     : null;
 

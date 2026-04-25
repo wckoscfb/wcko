@@ -110,10 +110,11 @@ export default function App() {
       opponentFeederRoots,
       scenario.placements,
       scenario.odds,
+      scenario.useEstimatedOdds,
     );
   }, [
     scenario.analyzedTeam, roundMatches, opponentFeederRoots, analyzedPath, r32Match,
-    scenario.placements, scenario.odds,
+    scenario.placements, scenario.odds, scenario.useEstimatedOdds,
   ]);
 
   // Auto-place analyzed team in their R32 slot whenever the slot changes
@@ -268,6 +269,7 @@ export default function App() {
           thirdsOptions={thirdsOptions}
           onThirdChange={handleThirdChange}
           resolvedR32={r32Match}
+          onToggleEstimatedOdds={(v) => setS({ useEstimatedOdds: v })}
           scenarioName={scenario.scenarioName}
           onNameChange={(v) => setS({ scenarioName: v })}
           onSave={handleSave}
@@ -305,6 +307,7 @@ export default function App() {
                       opponentFeederRoot={opponentFeederRoots[r]}
                       placements={scenario.placements}
                       odds={scenario.odds}
+                      useEstimatedOdds={scenario.useEstimatedOdds}
                       survivalChain={survivalChain}
                       onClear={handleClear}
                       onOddsChange={handleOddsChange}

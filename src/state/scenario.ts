@@ -8,7 +8,7 @@ export function defaultScenario(): Scenario {
     autoAdvance: { R32: true, R16: true, QF: true, SF: true, Final: true },
     placements: {},
     odds: {},
-    useEstimatedOdds: false,
+    useEstimatedOdds: true,    // sensible default: auto-estimates via BT everywhere
     scenarioName: '',
   };
 }
