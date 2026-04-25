@@ -11,10 +11,11 @@ interface Props {
   draggedTeam: TeamCode | null;
   onClear: (matchId: MatchId, side: 'A' | 'B') => void;
   onOddsChange: (matchId: MatchId, value: string) => void;
+  hintSlotKey?: string | null;
 }
 
 export function OpponentFeederTree({
-  rootId, placements, odds, useEstimatedOdds, draggedTeam, onClear, onOddsChange,
+  rootId, placements, odds, useEstimatedOdds, draggedTeam, onClear, onOddsChange, hintSlotKey,
 }: Props) {
   const byRound = collectSubtreeByRound(rootId);
   const cols = ROUND_ORDER.filter(r => byRound[r].length > 0);
@@ -37,6 +38,7 @@ export function OpponentFeederTree({
                 draggedTeam={draggedTeam}
                 onClear={onClear}
                 onOddsChange={onOddsChange}
+                hintSlotKey={hintSlotKey}
               />
             ))}
           </div>

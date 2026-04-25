@@ -20,6 +20,7 @@ import { TEAM_BY_CODE } from './data/teams';
 import { eligibleForMatchSide } from './logic/eligibility';
 import {
   areOnSamePath,
+  collectSubtreeByRound,
   findR32Options3,
   getAnalyzedPath,
   getAnalyzedSideAt,
@@ -99,6 +100,38 @@ export default function App() {
     }
     return out as Record<Round, MatchId | null>;
   }, [roundMatches, analyzedPath]);
+
+  // First empty slot in any visible opponent feeder — drives the one-shot
+  // "you can drop a team here" hint (shown on this slot only, not every empty
+  // slot, so it reads as a tutorial cue rather than constant chatter).
+  // Priority: the user's own R32 opponent slot first, then deeper rounds.
+  const hintSlotKey = useMemo<string | null>(() => {
+    if (!opponentFeederRoots) return null;
+    // R32: the analyzed team's own match — opponent side is whichever isn't analyzed.
+    if (roundMatches && r32Match) {
+      const r32Mid = roundMatches.R32;
+      if (r32Mid) {
+        const oppSide = r32Match.side === 'A' ? 'B' : 'A';
+        const key = `${r32Mid}.${oppSide}`;
+        if (!scenario.placements[key]) return key;
+      }
+    }
+    for (const r of ROUND_ORDER) {
+      if (r === 'R32') continue;
+      const root = opponentFeederRoots[r];
+      if (!root) continue;
+      const subtree = collectSubtreeByRound(root);
+      for (const subRound of ROUND_ORDER) {
+        for (const mid of [...subtree[subRound]].sort()) {
+          for (const side of ['A', 'B'] as const) {
+            const key = `${mid}.${side}`;
+            if (!scenario.placements[key]) return key;
+          }
+        }
+      }
+    }
+    return null;
+  }, [opponentFeederRoots, scenario.placements, roundMatches, r32Match]);
 
   // Per-round win probability — drives the "From here, X% to reach R16…" panel
   const survivalChain = useMemo(() => {
@@ -309,6 +342,7 @@ export default function App() {
                       odds={scenario.odds}
                       useEstimatedOdds={scenario.useEstimatedOdds}
                       survivalChain={survivalChain}
+                      hintSlotKey={hintSlotKey}
                       onClear={handleClear}
                       onOddsChange={handleOddsChange}
                       draggedTeam={draggedTeam}

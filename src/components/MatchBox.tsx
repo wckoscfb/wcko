@@ -24,6 +24,12 @@ export interface MatchBoxProps {
    * user can override by dragging a specific team in.
    */
   slotEstimate?: { side: SlotSide; code: TeamCode; prob: number };
+  /**
+   * Optional: the unique key (`${matchId}.${side}`) of the single empty slot
+   * that should render the "you can drop a team here" hint. Only one slot in
+   * the entire UI gets the hint, to avoid visual repetition.
+   */
+  hintSlotKey?: string | null;
 }
 
 interface SlotProps {
@@ -34,9 +40,10 @@ interface SlotProps {
   onClear: (matchId: MatchId, side: SlotSide) => void;
   isLocked: boolean;
   estimate?: { code: TeamCode; prob: number };
+  showHint?: boolean;
 }
 
-function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estimate }: SlotProps) {
+function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estimate, showHint }: SlotProps) {
   const m = MATCHES[matchId];
   const slot = m[side];
   const placed = placements[`${matchId}.${side}`];
@@ -125,8 +132,16 @@ function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estim
           </span>
         </div>
       ) : (
-        <span className="text-gray-500 italic flex-1 truncate py-1" title={slotLabel(slot)}>
+        <span
+          className="flex-1 truncate py-1 text-gray-500 italic"
+          title={`${slotLabel(slot)} — you can drag any eligible team here to lock in this matchup`}
+        >
           {slotLabel(slot)}{slot.kind === 'thirds' ? ' (any)' : ''}
+          {showHint && (
+            <span className="ml-1.5 text-gray-400 text-[10px] not-italic font-normal whitespace-nowrap">
+              · you can drop a team here
+            </span>
+          )}
         </span>
       )}
     </div>
@@ -144,6 +159,7 @@ export function MatchBox({
   showOdds = true,
   lockedSlot = null,
   slotEstimate,
+  hintSlotKey,
 }: MatchBoxProps) {
   const m = MATCHES[matchId];
   const topPlaced = placements[`${matchId}.A`];
@@ -176,6 +192,7 @@ export function MatchBox({
         onClear={onClear}
         isLocked={lockedSlot === 'A'}
         estimate={slotEstimate?.side === 'A' ? { code: slotEstimate.code, prob: slotEstimate.prob } : undefined}
+        showHint={hintSlotKey === `${matchId}.A`}
       />
       <Slot
         matchId={matchId}
@@ -185,6 +202,7 @@ export function MatchBox({
         onClear={onClear}
         isLocked={lockedSlot === 'B'}
         estimate={slotEstimate?.side === 'B' ? { code: slotEstimate.code, prob: slotEstimate.prob } : undefined}
+        showHint={hintSlotKey === `${matchId}.B`}
       />
       {showOdds && (
         <div className="px-2 py-1 border-t bg-gray-50 flex items-center gap-1">
