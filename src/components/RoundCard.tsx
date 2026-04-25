@@ -102,6 +102,17 @@ export function RoundCard({
                 onOddsChange={onOddsChange}
                 showOdds={false}
                 lockedSlot={analyzedSide}
+                slotEstimate={
+                  // Show inline estimate of top opponent in the empty slot
+                  // (same data as the right panel; visual symmetry with R16+ rounds).
+                  sortedOpp.length > 0 && useEstimatedOdds
+                    ? {
+                        side: analyzedSide === 'A' ? 'B' : 'A',
+                        code: sortedOpp[0][0],
+                        prob: sortedOpp[0][1],
+                      }
+                    : undefined
+                }
               />
               {survivalChain && (
                 <PathSurvival round={round} survivalChain={survivalChain} analyzedTeam={analyzedTeam} />

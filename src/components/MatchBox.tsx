@@ -18,6 +18,12 @@ export interface MatchBoxProps {
   onOddsChange: (matchId: MatchId, value: string) => void;
   showOdds?: boolean;
   lockedSlot?: SlotSide | null;
+  /**
+   * Optional: when this side is empty and an estimate exists for it, render the
+   * estimated top opponent inline (italic, with %). Slot stays droppable so the
+   * user can override by dragging a specific team in.
+   */
+  slotEstimate?: { side: SlotSide; code: TeamCode; prob: number };
 }
 
 interface SlotProps {
@@ -27,9 +33,10 @@ interface SlotProps {
   draggedTeam: TeamCode | null;
   onClear: (matchId: MatchId, side: SlotSide) => void;
   isLocked: boolean;
+  estimate?: { code: TeamCode; prob: number };
 }
 
-function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked }: SlotProps) {
+function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estimate }: SlotProps) {
   const m = MATCHES[matchId];
   const slot = m[side];
   const placed = placements[`${matchId}.${side}`];
@@ -101,6 +108,22 @@ function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked }: Slo
             >✕</button>
           )}
         </>
+      ) : estimate ? (
+        // Show the estimated top opponent inline. Italic + lighter background
+        // signals "this is an estimate, not a hard placement". Slot stays
+        // droppable so the user can override by dragging a specific team in.
+        <div
+          className="flex items-center gap-2 flex-1 min-w-0 py-1 italic"
+          title={`Most likely opponent based on group-stage simulation. Drag a specific team here to lock in a different match-up.`}
+        >
+          <FlagImg code={estimate.code} />
+          <span className="flex-1 truncate text-gray-700">
+            {TEAM_BY_CODE[estimate.code].name}
+          </span>
+          <span className="text-sm font-bold text-blue-700 tabular-nums leading-none not-italic">
+            {(estimate.prob * 100).toFixed(0)}%
+          </span>
+        </div>
       ) : (
         <span className="text-gray-500 italic flex-1 truncate py-1" title={slotLabel(slot)}>
           {slotLabel(slot)}{slot.kind === 'thirds' ? ' (any)' : ''}
@@ -120,6 +143,7 @@ export function MatchBox({
   onOddsChange,
   showOdds = true,
   lockedSlot = null,
+  slotEstimate,
 }: MatchBoxProps) {
   const m = MATCHES[matchId];
   const topPlaced = placements[`${matchId}.A`];
@@ -151,6 +175,7 @@ export function MatchBox({
         draggedTeam={draggedTeam}
         onClear={onClear}
         isLocked={lockedSlot === 'A'}
+        estimate={slotEstimate?.side === 'A' ? { code: slotEstimate.code, prob: slotEstimate.prob } : undefined}
       />
       <Slot
         matchId={matchId}
@@ -159,6 +184,7 @@ export function MatchBox({
         draggedTeam={draggedTeam}
         onClear={onClear}
         isLocked={lockedSlot === 'B'}
+        estimate={slotEstimate?.side === 'B' ? { code: slotEstimate.code, prob: slotEstimate.prob } : undefined}
       />
       {showOdds && (
         <div className="px-2 py-1 border-t bg-gray-50 flex items-center gap-1">
