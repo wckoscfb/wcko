@@ -270,7 +270,7 @@ export default function App() {
 
           <main className="flex-1 overflow-auto p-3 sm:p-4">
             {!scenario.analyzedTeam ? (
-              <EmptyState />
+              <EmptyState onTeamPick={handleTeamChange} />
             ) : !scenario.groupFinish ? (
               <div className="text-center text-gray-600 mt-12">
                 Pick a group finish (1° / 2° / 3°) to begin.

@@ -2,7 +2,7 @@
 
 export type GroupLetter = 'A'|'B'|'C'|'D'|'E'|'F'|'G'|'H'|'I'|'J'|'K'|'L';
 export type TeamCode = string;             // e.g. 'POR'
-export type MatchId = string;              // e.g. 'P87'
+export type MatchId = string;              // e.g. 'G87'
 export type SlotSide = 'A' | 'B';          // 'A' = top, 'B' = bottom
 export type Round = 'R32' | 'R16' | 'QF' | 'SF' | 'Final';
 export type GroupFinish = '1' | '2' | '3';

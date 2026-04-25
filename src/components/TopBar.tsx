@@ -49,9 +49,21 @@ export function TopBar({
 
   return (
     <header className="bg-white border-b px-3 py-2 flex items-center gap-2 sm:gap-3 flex-wrap shadow-sm">
-      <h1 className="text-base font-bold whitespace-nowrap">
-        ⚽ <span>WCKO</span><span className="text-gray-400 text-xs ml-1 hidden sm:inline">— World Cup KO</span>
-      </h1>
+      <button
+        onClick={() => onTeamChange(null)}
+        className="flex items-center gap-2 hover:opacity-80 active:opacity-70 transition-opacity rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
+        title="Back to home"
+        aria-label="WCKO — back to home"
+      >
+        <img
+          src="/icon-192.png"
+          alt=""
+          width="32"
+          height="32"
+          className="w-8 h-8 rounded-md flex-shrink-0"
+        />
+        <span className="font-bold text-base hidden sm:inline">WCKO</span>
+      </button>
       <select
         value={scenario.analyzedTeam || ''}
         onChange={(e) => onTeamChange(e.target.value || null)}
