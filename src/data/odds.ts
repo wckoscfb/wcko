@@ -94,39 +94,36 @@ export function bradleyTerryTopWins(topTeam: TeamCode, botTeam: TeamCode): numbe
  * Analytical group-stage simulation: for a 4-team group, enumerate all 2^6 = 64
  * possible match outcomes (no draws — the BT model is binary). For each
  * outcome, compute per-team wins and rank, then accumulate the probability
- * each team finishes 3°.
+ * each team finishes 1st / 2nd / 3rd / 4th.
  *
  * Per-match probabilities come from Bradley-Terry on WC_WIN_PROB. Tiebreakers
- * for equal wins use WCP (proxy for goal difference). Result is cached per
- * group letter — only ever computed 12 times across the app's lifetime.
+ * for equal wins use WCP (proxy for goal difference). Cached per group letter —
+ * only ever computed 12 times across the app's lifetime.
  *
- * This is much more accurate than a rank-based heuristic because it correctly
- * models situations like "very strong team in a weak group" (the strong team
- * almost never finishes 3°) vs "evenly matched group" (3° distribution closer
- * to uniform).
+ * Returns: Map<TeamCode, [P(1°), P(2°), P(3°), P(4°)]>. Each per-team array
+ * sums to 1 (the team always finishes somewhere); each per-position column
+ * sums to 1 (exactly one team holds each position).
  */
-const _thirdPlaceCache = new Map<GroupLetter, Map<TeamCode, number>>();
+const _groupSimCache = new Map<GroupLetter, Map<TeamCode, [number, number, number, number]>>();
 
-export function thirdPlaceProbabilities(groupLetter: GroupLetter): Map<TeamCode, number> {
-  const cached = _thirdPlaceCache.get(groupLetter);
+export function simulateGroup(groupLetter: GroupLetter): Map<TeamCode, [number, number, number, number]> {
+  const cached = _groupSimCache.get(groupLetter);
   if (cached) return cached;
 
   const teams = GROUPS[groupLetter];
-  // 6 matches in a 4-team round-robin: pairs (i, j) with i < j
   const matches: Array<[number, number]> = [];
   for (let i = 0; i < 4; i++) {
     for (let j = i + 1; j < 4; j++) matches.push([i, j]);
   }
-
-  // Per-match BT probability that team i beats team j
   const matchProbs = matches.map(([i, j]) => {
     const bt = bradleyTerryTopWins(teams[i], teams[j]);
     return bt !== null ? bt / 100 : 0.5;
   });
 
-  const result = new Map<TeamCode, number>(teams.map(t => [t, 0]));
+  const positions = new Map<TeamCode, [number, number, number, number]>(
+    teams.map(t => [t, [0, 0, 0, 0]]),
+  );
 
-  // Enumerate all 2^6 = 64 outcomes
   const numOutcomes = 1 << matches.length;
   for (let outcome = 0; outcome < numOutcomes; outcome++) {
     let outcomeProb = 1;
@@ -142,18 +139,39 @@ export function thirdPlaceProbabilities(groupLetter: GroupLetter): Map<TeamCode,
         outcomeProb *= 1 - matchProbs[m];
       }
     }
-    // Determine 3rd-place finisher: sort indices by wins desc, WCP desc as tiebreak
     const indices = [0, 1, 2, 3];
     indices.sort((a, b) => {
       if (wins[b] !== wins[a]) return wins[b] - wins[a];
       return (WC_WIN_PROB[teams[b]] ?? 0) - (WC_WIN_PROB[teams[a]] ?? 0);
     });
-    const thirdPlaceTeam = teams[indices[2]];
-    result.set(thirdPlaceTeam, (result.get(thirdPlaceTeam) ?? 0) + outcomeProb);
+    for (let pos = 0; pos < 4; pos++) {
+      positions.get(teams[indices[pos]])![pos] += outcomeProb;
+    }
   }
 
-  _thirdPlaceCache.set(groupLetter, result);
+  _groupSimCache.set(groupLetter, positions);
+  return positions;
+}
+
+/**
+ * Probability distribution over teams in `groupLetter` finishing at the given
+ * position (1, 2, 3, or 4). Used for empty group slots in the bracket.
+ */
+export function positionProbabilities(
+  groupLetter: GroupLetter,
+  pos: 1 | 2 | 3 | 4,
+): Map<TeamCode, number> {
+  const sim = simulateGroup(groupLetter);
+  const result = new Map<TeamCode, number>();
+  for (const [team, probs] of sim) {
+    result.set(team, probs[pos - 1]);
+  }
   return result;
+}
+
+/** Backwards-compat alias used elsewhere. */
+export function thirdPlaceProbabilities(groupLetter: GroupLetter): Map<TeamCode, number> {
+  return positionProbabilities(groupLetter, 3);
 }
 
 /**

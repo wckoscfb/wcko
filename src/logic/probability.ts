@@ -1,5 +1,5 @@
 import { MATCHES, ROUND_OF, ROUND_ORDER } from '../data/bracket';
-import { bradleyTerryTopWins, thirdsCandidateDistribution } from '../data/odds';
+import { bradleyTerryTopWins, positionProbabilities, thirdsCandidateDistribution } from '../data/odds';
 import { collectSubtreeByRound } from './paths';
 import type { Match, MatchId, Round, SlotSpec, TeamCode, WinnerDist } from '../types';
 
@@ -99,9 +99,15 @@ function computeAtLevel(
         return new Map();
       }
       if (slot.kind === 'thirds') {
-        // Realistic estimate: rank-based per-group 3°-finish probability
-        // (strong teams almost never finish 3°, the 3rd-strongest most often does).
+        // Realistic estimate: per-group 3°-finish probability from BT
+        // simulation (strong teams almost never finish 3°).
         return thirdsCandidateDistribution(slot.groups);
+      }
+      if (slot.kind === 'group') {
+        // Empty 1° or 2° group slot: estimate via per-position distribution
+        // from the same BT simulation. So an empty 1°L slot becomes
+        // "England 90%, Croatia 7%, Ghana 2%, Panama 1%" instead of nothing.
+        return positionProbabilities(slot.group, slot.pos as 1 | 2);
       }
       return new Map();
     }
