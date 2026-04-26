@@ -1,12 +1,15 @@
 {
-  "name": "WCKO — Visualize every team's path to Glory",
+  "name": "WCKO — World Cup 2026 Bracket Predictor",
   "short_name": "WCKO",
-  "description": "Map your team's path through the 2026 World Cup knockouts.",
+  "description": "Free interactive World Cup 2026 bracket predictor. Drag teams through every knockout round, see your team's path to the Final, share scenarios with friends.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#eff6ff",
   "theme_color": "#2563eb",
   "orientation": "any",
+  "lang": "en",
+  "categories": ["sports", "entertainment", "utilities"],
   "icons": [
     {
       "src": "/icon-192.png",
