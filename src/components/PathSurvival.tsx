@@ -1,5 +1,5 @@
 import { ROUND_ORDER } from '../data/bracket';
-import { TEAM_BY_CODE } from '../data/teams';
+import { useLang, useT } from '../i18n/context';
 import type { Round, TeamCode } from '../types';
 
 interface Props {
@@ -7,15 +7,6 @@ interface Props {
   survivalChain: Record<Round, number>;     // P(win round) per round
   analyzedTeam: TeamCode;
 }
-
-// Label for "what advancing past round X gives the team"
-const MILESTONE_LABEL: Record<Round, string> = {
-  R32: 'Reach R16',
-  R16: 'Reach QF',
-  QF: 'Reach SF',
-  SF: 'Reach Final',
-  Final: 'Champion 🏆',
-};
 
 function formatPct(p: number): string {
   if (p >= 0.1) return `${(p * 100).toFixed(0)}%`;
@@ -25,17 +16,26 @@ function formatPct(p: number): string {
 }
 
 export function PathSurvival({ round, survivalChain, analyzedTeam }: Props) {
-  const team = TEAM_BY_CODE[analyzedTeam];
+  const t = useT();
+  const { teamName } = useLang();
   const startIdx = ROUND_ORDER.indexOf(round);
 
+  // Label for "what advancing past round X gives the team". Final converts to
+  // the special "Champion 🏆" string; every other round becomes "Reach <next>".
+  const milestoneLabel = (r: Round): string => {
+    if (r === 'Final') return t('survival.champion');
+    const nextIdx = ROUND_ORDER.indexOf(r) + 1;
+    const next = ROUND_ORDER[nextIdx];
+    return t('survival.reach', { round: t(`round.${next}`) });
+  };
+
   // Build cumulative survival from this round forward.
-  // At index i (round R), winning that round earns the milestone labelled MILESTONE_LABEL[R].
   const items: Array<{ label: string; prob: number }> = [];
   let cumulative = 1;
   for (let i = startIdx; i < ROUND_ORDER.length; i++) {
     const r = ROUND_ORDER[i];
     cumulative *= survivalChain[r];
-    items.push({ label: MILESTONE_LABEL[r], prob: cumulative });
+    items.push({ label: milestoneLabel(r), prob: cumulative });
   }
 
   if (items.length === 0) return null;
@@ -43,7 +43,7 @@ export function PathSurvival({ round, survivalChain, analyzedTeam }: Props) {
   return (
     <div className="mt-3 bg-gray-50 rounded border border-gray-200 p-2.5">
       <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-2 leading-tight">
-        From here, {team?.name ?? analyzedTeam} would
+        {t('survival.from_here', { team: teamName(analyzedTeam) })}
       </div>
       <ul className="space-y-1.5">
         {items.map(({ label, prob }) => (

@@ -28,6 +28,7 @@ import {
   getRoundMatches,
   resolveR32,
 } from './logic/paths';
+import { useT } from './i18n/context';
 import { computeSurvivalChain } from './logic/probability';
 import { defaultScenario } from './state/scenario';
 import { getScenarioFromUrl } from './state/shareLink';
@@ -56,6 +57,7 @@ function useIsMobile(breakpoint = 768) {
 }
 
 export default function App() {
+  const t = useT();
   const [scenario, setScenario] = useState<Scenario>(defaultScenario);
   const [savedScenarios, setSavedScenarios] = useState<Record<string, Scenario>>({});
   const [draggedTeam, setDraggedTeam] = useState<TeamCode | null>(null);
@@ -327,7 +329,7 @@ export default function App() {
   };
 
   const handleClearAll = () => {
-    if (confirm('Reset everything (current scenario)?')) setScenario(defaultScenario());
+    if (confirm(t('topbar.reset_confirm'))) setScenario(defaultScenario());
   };
   const handleSave = () => {
     const name = scenario.scenarioName.trim();
@@ -384,7 +386,7 @@ export default function App() {
               <EmptyState onTeamPick={handleTeamChange} />
             ) : !scenario.groupFinish ? (
               <div className="text-center text-gray-600 mt-12">
-                Pick a group finish (1° / 2° / 3°) to begin.
+                {t('finish.prompt')}
               </div>
             ) : (
               <div className="space-y-3 sm:space-y-4 max-w-full">

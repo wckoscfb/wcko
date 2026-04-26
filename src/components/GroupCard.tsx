@@ -1,4 +1,5 @@
 import { GROUPS, TEAM_BY_CODE } from '../data/teams';
+import { useLang, useT } from '../i18n/context';
 import type { TeamCode } from '../types';
 import { FlagImg } from './FlagImg';
 
@@ -7,12 +8,14 @@ interface Props {
 }
 
 export function GroupCard({ analyzedTeam }: Props) {
+  const t = useT();
+  const { teamName } = useLang();
   const team = TEAM_BY_CODE[analyzedTeam];
   if (!team) return null;
   return (
     <section className="bg-white rounded-lg shadow-sm border p-3">
       <div className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">
-        Group {team.group}
+        {t('group.label', { letter: team.group })}
       </div>
       <div className="flex flex-wrap gap-2 sm:gap-3">
         {GROUPS[team.group].map(c => (
@@ -23,7 +26,7 @@ export function GroupCard({ analyzedTeam }: Props) {
             }`}
           >
             <FlagImg code={c} />
-            <span>{TEAM_BY_CODE[c].name}</span>
+            <span>{teamName(c)}</span>
           </div>
         ))}
       </div>

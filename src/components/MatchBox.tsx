@@ -1,8 +1,8 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { MATCHES, slotLabel } from '../data/bracket';
-import { TEAM_BY_CODE } from '../data/teams';
 import { bradleyTerryTopWins } from '../data/odds';
+import { useLang, useT } from '../i18n/context';
 import { eligibleForMatchSide } from '../logic/eligibility';
 import { matchIsOneVsThird } from '../logic/probability';
 import type { DropTargetData, MatchId, SlotSide, TeamCode } from '../types';
@@ -45,6 +45,8 @@ interface SlotProps {
 }
 
 function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estimate, showHint }: SlotProps) {
+  const t = useT();
+  const { teamName } = useLang();
   const m = MATCHES[matchId];
   const slot = m[side];
   const placed = placements[`${matchId}.${side}`];
@@ -92,10 +94,10 @@ function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estim
             className={`no-callout flex items-center gap-2 flex-1 min-w-0 py-1 ${
               !isLocked ? 'cursor-grab active:cursor-grabbing touch-none' : ''
             }`}
-            title={isLocked ? TEAM_BY_CODE[placed].name : `Drag ${TEAM_BY_CODE[placed].name} to next round`}
+            title={isLocked ? teamName(placed) : t('match.drag_to_next', { team: teamName(placed) })}
           >
             <FlagImg code={placed} />
-            <span className="flex-1 truncate">{TEAM_BY_CODE[placed].name}</span>
+            <span className="flex-1 truncate">{teamName(placed)}</span>
           </div>
           {isLocked ? (
             <LockBadge />
@@ -104,8 +106,8 @@ function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estim
               onClick={() => onClear(matchId, side)}
               onContextMenu={(e) => { e.preventDefault(); onClear(matchId, side); }}
               className="text-gray-400 hover:text-red-600 text-xs px-1 py-1"
-              title="Clear slot"
-              aria-label="Clear slot"
+              title={t('match.clear')}
+              aria-label={t('match.clear')}
             >✕</button>
           )}
         </>
@@ -115,12 +117,10 @@ function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estim
         // droppable so the user can override by dragging a specific team in.
         <div
           className="flex items-center gap-2 flex-1 min-w-0 py-1 italic"
-          title={`Most likely opponent based on group-stage simulation. Drag a specific team here to lock in a different match-up.`}
+          title={t('match.estimate_top_title')}
         >
           <FlagImg code={estimate.code} />
-          <span className="flex-1 truncate text-gray-700">
-            {TEAM_BY_CODE[estimate.code].name}
-          </span>
+          <span className="flex-1 truncate text-gray-700">{teamName(estimate.code)}</span>
           <span className="text-sm font-bold text-blue-700 tabular-nums leading-none not-italic">
             {(estimate.prob * 100).toFixed(0)}%
           </span>
@@ -128,12 +128,12 @@ function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estim
       ) : (
         <span
           className="flex-1 truncate py-1 text-gray-500 italic"
-          title={`${slotLabel(slot)} — you can drag any eligible team here to lock in this matchup`}
+          title={t('match.empty_slot_title', { label: slotLabel(slot) })}
         >
-          {slotLabel(slot)}{slot.kind === 'thirds' ? ' (any)' : ''}
+          {slotLabel(slot)}{slot.kind === 'thirds' ? ` ${t('match.thirds_any')}` : ''}
           {showHint && (
             <span className="ml-1.5 text-gray-400 text-[10px] not-italic font-normal whitespace-nowrap">
-              · you can drop a team here
+              {t('match.drop_hint')}
             </span>
           )}
         </span>
@@ -155,6 +155,7 @@ export function MatchBox({
   slotEstimate,
   hintSlotKey,
 }: MatchBoxProps) {
+  const t = useT();
   const m = MATCHES[matchId];
   const topPlaced = placements[`${matchId}.A`];
   const botPlaced = placements[`${matchId}.B`];
@@ -173,8 +174,8 @@ export function MatchBox({
       <div className="text-[10px] text-gray-500 px-2 py-0.5 border-b bg-gray-50 flex justify-between">
         <span className="font-mono font-semibold">{matchId}</span>
         {isOneVsThird && (
-          <span className="text-gray-400" title="1° vs 3° auto-resolves to 1° unless contradicted">
-            auto→1°
+          <span className="text-gray-400" title={t('match.auto_one_title')}>
+            {t('match.auto_one')}
           </span>
         )}
       </div>
@@ -200,8 +201,8 @@ export function MatchBox({
       />
       {showOdds && (
         <div className="px-2 py-1 border-t bg-gray-50 flex items-center gap-1">
-          <span className="text-[10px] text-gray-500" title="% chance the TOP slot team wins this match">
-            % top wins:
+          <span className="text-[10px] text-gray-500" title={t('match.top_wins_title')}>
+            {t('match.top_wins')}
           </span>
           <input
             type="number" min={0} max={100} step={1} inputMode="numeric"
@@ -218,7 +219,7 @@ export function MatchBox({
             disabled={!topPlaced || !botPlaced}
             title={
               estimatedOdds !== null && (oddsVal === undefined || oddsVal === '')
-                ? `Estimated ${estimatedOdds}% from team strength — type to override`
+                ? t('match.estimated_odds_title', { pct: estimatedOdds })
                 : undefined
             }
             className={`w-14 text-xs border rounded px-1 py-0.5 disabled:bg-gray-100 disabled:cursor-not-allowed ${

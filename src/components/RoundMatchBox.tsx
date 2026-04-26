@@ -1,7 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import { useMemo } from 'react';
-import { ROUND_LABEL } from '../data/bracket';
-import { TEAM_BY_CODE } from '../data/teams';
+import { useLang, useT } from '../i18n/context';
 import { eligibleForMatchSide } from '../logic/eligibility';
 import { collectSubtreeByRound } from '../logic/paths';
 import type { DropTargetData, MatchId, Round, SlotSide, TeamCode } from '../types';
@@ -28,6 +27,8 @@ export function RoundMatchBox({
   matchId, analyzedTeam, analyzedSide, opponentDist, round,
   opponentFeederRoot, draggedTeam, showHint,
 }: Props) {
+  const t = useT();
+  const { teamName } = useLang();
   // True when the opponent is non-deterministic (multiple candidates) — that's
   // when the % needs explanation, since users could otherwise misread it as
   // "they win" or "we play them for sure".
@@ -65,7 +66,7 @@ export function RoundMatchBox({
   const renderAnalyzedSlot = () => (
     <div className="flex items-center gap-2 px-2 py-1.5 min-h-[28px] text-xs bg-blue-50 border border-blue-200">
       <FlagImg code={analyzedTeam} />
-      <span className="flex-1 truncate font-medium">{TEAM_BY_CODE[analyzedTeam].name}</span>
+      <span className="flex-1 truncate font-medium">{teamName(analyzedTeam)}</span>
       <LockBadge />
     </div>
   );
@@ -75,10 +76,10 @@ export function RoundMatchBox({
     if (opponentDist.length === 0) {
       content = (
         <span className="text-gray-500 italic flex-1 truncate">
-          opponent — TBD
+          {t('round.opponent_tbd')}
           {showHint && (
             <span className="ml-1.5 text-gray-400 text-[10px] not-italic font-normal whitespace-nowrap">
-              · you can drop a team here
+              {t('match.drop_hint')}
             </span>
           )}
         </span>
@@ -88,18 +89,21 @@ export function RoundMatchBox({
       content = (
         <>
           <FlagImg code={code} />
-          <span className="flex-1 truncate">{TEAM_BY_CODE[code].name}</span>
+          <span className="flex-1 truncate">{teamName(code)}</span>
         </>
       );
     } else {
       const [topCode, topProb] = opponentDist[0];
       const pct = (topProb * 100).toFixed(0);
-      const teamName = TEAM_BY_CODE[topCode].name;
-      const tooltip = `${teamName} has a ${pct}% chance of being your ${ROUND_LABEL[round]} opponent. Other candidates and their probabilities are listed in the panel on the right. Drag a different team here to lock that match-up instead.`;
+      const tooltip = t('match.percent_face_tooltip', {
+        team: teamName(topCode),
+        pct,
+        round: t(`round.${round}`),
+      });
       content = (
         <>
           <FlagImg code={topCode} />
-          <span className="flex-1 truncate text-gray-700">{teamName}</span>
+          <span className="flex-1 truncate text-gray-700">{teamName(topCode)}</span>
           <span
             className="text-sm font-bold text-blue-700 tabular-nums leading-none"
             title={tooltip}
@@ -122,11 +126,7 @@ export function RoundMatchBox({
       <div
         ref={setDropRef}
         className={`slot-base ${baseClass} ${eligibleClass} ${overClass} flex items-center gap-2 px-2 py-1.5 min-h-[28px] text-xs`}
-        title={
-          opponentFeederRoot
-            ? 'Drag a team here to lock them in as your opponent at this round'
-            : undefined
-        }
+        title={opponentFeederRoot ? t('match.slot_drop_hint_title') : undefined}
       >
         {content}
       </div>
@@ -146,7 +146,7 @@ export function RoundMatchBox({
           so it doesn't add visual noise when the opponent is a single team. */}
       {showsPercent && (
         <div className="text-[9px] text-gray-500 italic px-2 py-1 border-t bg-white leading-tight">
-          % = chance to face you at this round
+          {t('round.pct_face_caption')}
         </div>
       )}
     </div>

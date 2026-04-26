@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { MATCHES, ROUND_LABEL, TREE, slotLabel } from '../data/bracket';
+import { MATCHES, TREE, slotLabel } from '../data/bracket';
 import { positionProbabilities, thirdsCandidateDistribution } from '../data/odds';
+import { useT } from '../i18n/context';
 import { computeWinnerDistribution, determineLeafLevel, sortedDist, withoutExcluded } from '../logic/probability';
 import type { Match, MatchId, Round, SlotSide, TeamCode } from '../types';
 import { MatchBox } from './MatchBox';
@@ -50,6 +51,7 @@ export function RoundCard({
   placements, odds, useEstimatedOdds, excludeFromEstimates, survivalChain, hintSlotKey,
   onClear, onOddsChange, draggedTeam,
 }: Props) {
+  const t = useT();
   const m = MATCHES[roundMatchId];
 
   const opponentDist = useMemo(() => {
@@ -86,15 +88,17 @@ export function RoundCard({
   const sortedOpp = useMemo(() => sortedDist(opponentDist), [opponentDist]);
 
   const heading = useMemo(() => {
-    if (round === 'R32') return `${roundMatchId} (${slotLabel(m.A)} vs ${slotLabel(m.B)})`;
+    if (round === 'R32') {
+      return t('round.heading_r32', { matchId: roundMatchId, a: slotLabel(m.A), b: slotLabel(m.B) });
+    }
     const ch = TREE[roundMatchId];
-    return `${roundMatchId} (winner ${ch[0]} vs winner ${ch[1]})`;
-  }, [round, roundMatchId, m]);
+    return t('round.heading_other', { matchId: roundMatchId, a: ch[0], b: ch[1] });
+  }, [round, roundMatchId, m, t]);
 
   return (
     <section className="bg-white rounded-lg shadow-sm border">
       <div className="px-3 sm:px-4 py-2 border-b flex items-center gap-2 sm:gap-3 flex-wrap">
-        <h3 className="font-bold text-sm">{ROUND_LABEL[round]}</h3>
+        <h3 className="font-bold text-sm">{t(`round.${round}`)}</h3>
         <span className="text-xs text-gray-500 font-mono hidden sm:inline">{heading}</span>
       </div>
 
@@ -102,7 +106,7 @@ export function RoundCard({
         {round === 'R32' ? (
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
             <div className="lg:w-48 flex-shrink-0">
-              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">Your match</div>
+              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">{t('round.your_match')}</div>
               <MatchBox
                 matchId={roundMatchId}
                 placements={placements}
@@ -124,9 +128,7 @@ export function RoundCard({
                 on mobile to save vertical space. */}
             <div className="hidden lg:block min-w-0 flex-1 pt-4">
               <p className="text-xs text-gray-500 leading-relaxed max-w-md">
-                Drag a specific team into the opponent slot to lock in a
-                match-up. Otherwise the panel shows the most likely opponents
-                based on group-stage simulation.
+                {t('round.r32_tip')}
               </p>
             </div>
             <ResolvedOpponent
@@ -138,7 +140,7 @@ export function RoundCard({
         ) : (
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
             <div className="lg:w-48 flex-shrink-0">
-              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">Your match</div>
+              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">{t('round.your_match')}</div>
               <RoundMatchBox
                 matchId={roundMatchId}
                 analyzedTeam={analyzedTeam}
@@ -162,7 +164,7 @@ export function RoundCard({
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">
-                Opponent feeder — fill in flags & odds to compute who you might play
+                {t('round.opponent_feeder')}
               </div>
               {opponentFeederRoot && (
                 <OpponentFeederTree

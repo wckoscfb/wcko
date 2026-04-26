@@ -1,4 +1,4 @@
-import { TEAM_BY_CODE } from '../data/teams';
+import { useLang, useT } from '../i18n/context';
 import type { Round, TeamCode } from '../types';
 import { FlagImg } from './FlagImg';
 
@@ -19,6 +19,9 @@ const TOP_N = 6;
 const MIN_DISPLAY_PCT = 0.5; // hide individual rows below 0.5%
 
 export function ResolvedOpponent({ round, dist, fallback, leafLevel }: Props) {
+  const t = useT();
+  const { teamName } = useLang();
+
   // Filter out near-zero entries and partition into "shown" vs "collapsed"
   const filtered = dist.filter(([, p]) => p * 100 >= MIN_DISPLAY_PCT);
   const shown = filtered.slice(0, TOP_N);
@@ -34,27 +37,27 @@ export function ResolvedOpponent({ round, dist, fallback, leafLevel }: Props) {
   return (
     <div className="border-l-2 border-blue-200 pl-3 min-w-[200px]">
       <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-1">
-        {round} opponent
+        {t('round.opponent_label', { round: t(`round.${round}`) })}
       </div>
       {dist.length === 0 ? (
-        <div className="text-xs text-gray-500 italic">{fallback || 'TBD — fill in opponent feeder'}</div>
+        <div className="text-xs text-gray-500 italic">{fallback || t('round.tbd_fill')}</div>
       ) : dist.length === 1 && Math.abs(dist[0][1] - 1) < 1e-9 ? (
         <div className="flex items-center gap-2 text-sm">
           <FlagImg code={dist[0][0]} size="lg" />
-          <span className="font-medium">{TEAM_BY_CODE[dist[0][0]].name}</span>
+          <span className="font-medium">{teamName(dist[0][0])}</span>
         </div>
       ) : (
         <>
           {leafLevel && (
             <div className="text-[10px] text-blue-700 font-medium italic mb-1">
-              With this {leafLevel}:
+              {t('round.with_this_level', { level: t(`round.${leafLevel}`) })}
             </div>
           )}
           <ul className="space-y-1">
             {shown.map(([code, p]) => (
               <li key={code} className="flex items-center gap-2 text-xs">
                 <FlagImg code={code} />
-                <span className="flex-1">{TEAM_BY_CODE[code].name}</span>
+                <span className="flex-1">{teamName(code)}</span>
                 <span className="font-mono text-blue-700 font-bold tabular-nums">
                   {(p * 100).toFixed(p < 0.1 ? 1 : 0)}%
                 </span>
@@ -63,10 +66,13 @@ export function ResolvedOpponent({ round, dist, fallback, leafLevel }: Props) {
             {otherCount > 0 && (
               <li
                 className="flex items-center gap-2 text-xs text-gray-500 italic pt-1 border-t border-dashed border-gray-200"
-                title={`Sum of all teams below ${TOP_N > 0 ? 'top ' + TOP_N : 'threshold'}`}
               >
                 <span className="w-[22px] text-center">…</span>
-                <span className="flex-1">+{otherCount} other team{otherCount > 1 ? 's' : ''}</span>
+                <span className="flex-1">
+                  {otherCount === 1
+                    ? t('round.other_team_singular')
+                    : t('round.other_teams', { n: otherCount })}
+                </span>
                 <span className="font-mono text-blue-700 tabular-nums">{(otherSum * 100).toFixed(otherSum < 0.1 ? 1 : 0)}%</span>
               </li>
             )}

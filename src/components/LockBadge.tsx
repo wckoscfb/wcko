@@ -1,3 +1,5 @@
+import { useT } from '../i18n/context';
+
 /**
  * The 12×12 lock icon shown next to the analyzed team's flag in any slot
  * where they're locked (R32 own slot, R16+ "your match" panel, etc.).
@@ -6,11 +8,12 @@
  * MatchBox.Slot and RoundMatchBox alike.
  */
 export function LockBadge() {
+  const t = useT();
   return (
     <span
       className="text-blue-600 flex-shrink-0"
-      title="Your analyzed team — locked across every round"
-      aria-label="Your team — locked"
+      title={t('round.lock_title')}
+      aria-label={t('round.lock_aria')}
     >
       <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
         <path

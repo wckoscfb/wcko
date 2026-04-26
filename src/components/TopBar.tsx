@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { TEAMS } from '../data/teams';
-import type { GroupFinish, MatchId, R32SlotPosition, Scenario, TeamCode } from '../types';
+import { useLang, useT } from '../i18n/context';
 import { buildShareUrl } from '../state/shareLink';
+import type { GroupFinish, MatchId, R32SlotPosition, Scenario, TeamCode } from '../types';
+import { LangSwitcher } from './LangSwitcher';
 
 interface Props {
   scenario: Scenario;
@@ -28,14 +30,20 @@ export function TopBar({
   onSave, onLoad, onDelete, onClear,
   savedNames,
 }: Props) {
+  const t = useT();
+  const { teamName } = useLang();
   const [shareCopied, setShareCopied] = useState(false);
+
+  const finishLabel = (p: GroupFinish): string => (
+    p === '1' ? t('finish.first') : p === '2' ? t('finish.second') : t('finish.third')
+  );
 
   const handleShare = async () => {
     const url = buildShareUrl(scenario);
     try {
       // Prefer Web Share on mobile
       if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
-        await navigator.share({ title: 'My WCKO scenario', url });
+        await navigator.share({ title: t('topbar.share_title'), url });
         return;
       }
       await navigator.clipboard.writeText(url);
@@ -43,7 +51,7 @@ export function TopBar({
       setTimeout(() => setShareCopied(false), 2000);
     } catch {
       // Fallback: prompt
-      window.prompt('Copy this link:', url);
+      window.prompt(t('topbar.share_copy_prompt'), url);
     }
   };
 
@@ -52,8 +60,8 @@ export function TopBar({
       <button
         onClick={() => onTeamChange(null)}
         className="flex items-center gap-2 hover:opacity-80 active:opacity-70 transition-opacity rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
-        title="Back to home"
-        aria-label="WCKO — back to home"
+        title={t('topbar.back_home')}
+        aria-label={t('topbar.back_home_aria')}
       >
         <img
           src="/icon-192.png"
@@ -75,13 +83,15 @@ export function TopBar({
         onChange={(e) => onTeamChange(e.target.value || null)}
         className="border rounded px-2 py-1 text-sm min-w-0 max-w-[180px] sm:max-w-none"
       >
-        <option value="">— Pick a team —</option>
-        {TEAMS.map(t => (
-          <option key={t.code} value={t.code}>{t.name} (Group {t.group})</option>
+        <option value="">— {t('topbar.team_placeholder')} —</option>
+        {TEAMS.map(team => (
+          <option key={team.code} value={team.code}>
+            {teamName(team.code)} ({t('group.label', { letter: team.group })})
+          </option>
         ))}
       </select>
       {scenario.analyzedTeam && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" title={t('finish.tooltip')}>
           {(['1','2','3'] as GroupFinish[]).map(p => (
             <button
               key={p}
@@ -91,13 +101,13 @@ export function TopBar({
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
               }`}
-            >{p}°</button>
+            >{finishLabel(p)}</button>
           ))}
         </div>
       )}
       {scenario.groupFinish === '3' && thirdsOptions.length > 1 && (
         <label className="text-xs text-gray-600 flex items-center gap-1">
-          3°→
+          {t('finish.third')}→
           <select
             value={resolvedR32?.matchId || ''}
             onChange={(e) => onThirdChange(e.target.value)}
@@ -112,11 +122,11 @@ export function TopBar({
       <button
         onClick={onClear}
         className="px-2 py-1 text-xs text-gray-600 border rounded hover:bg-gray-50"
-      >Reset</button>
+      >{t('topbar.reset')}</button>
 
       <label
         className="flex items-center gap-1.5 px-2 py-1 text-xs border rounded cursor-pointer select-none hover:bg-gray-50"
-        title="When ON, unset matches use estimated odds based on team strength (live bookmaker consensus). When OFF, only your manually-typed odds count and unset matches default to 50/50."
+        title={t('topbar.auto_estimate_title')}
       >
         <input
           type="checkbox"
@@ -124,45 +134,46 @@ export function TopBar({
           onChange={(e) => onToggleEstimatedOdds(e.target.checked)}
           className="w-3.5 h-3.5"
         />
-        <span>Auto-estimate odds</span>
+        <span>{t('topbar.auto_estimate')}</span>
       </label>
 
       <div className="ml-auto flex items-center gap-2 flex-wrap">
+        <LangSwitcher />
         <button
           onClick={handleShare}
           className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
           disabled={!scenario.analyzedTeam}
         >
-          {shareCopied ? '✓ Copied' : 'Share'}
+          {shareCopied ? `✓ ${t('topbar.share_copied')}` : t('topbar.share')}
         </button>
         <input
           value={scenarioName}
           onChange={(e) => onNameChange(e.target.value)}
-          placeholder="Scenario name…"
+          placeholder={t('topbar.scenario_placeholder')}
           className="border rounded px-2 py-1 text-sm w-32 sm:w-40"
         />
         <button
           onClick={onSave}
           disabled={!scenarioName.trim()}
           className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-        >Save</button>
+        >{t('topbar.save')}</button>
         <select
           value=""
           onChange={(e) => { if (e.target.value) onLoad(e.target.value); }}
           className="border rounded px-2 py-1 text-sm"
         >
-          <option value="">Load…</option>
+          <option value="">{t('topbar.load')}</option>
           {savedNames.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
         {savedNames.length > 0 && (
           <select
             value=""
             onChange={(e) => {
-              if (e.target.value && confirm(`Delete scenario "${e.target.value}"?`)) onDelete(e.target.value);
+              if (e.target.value && confirm(`${t('topbar.delete')} "${e.target.value}"?`)) onDelete(e.target.value);
             }}
             className="border rounded px-2 py-1 text-sm"
           >
-            <option value="">Delete…</option>
+            <option value="">{t('topbar.delete')}…</option>
             {savedNames.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         )}
