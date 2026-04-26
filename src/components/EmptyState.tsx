@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { TEAM_BY_CODE } from '../data/teams';
 import type { TeamCode } from '../types';
 import { FlagImg } from './FlagImg';
@@ -88,9 +89,28 @@ export function EmptyState({ onTeamPick }: EmptyStateProps) {
 }
 
 export function Footer() {
+  // Light obfuscation — assemble the address at click time so static HTML
+  // scrapers don't pick it up as a literal string. Real users still get a
+  // normal mailto behaviour.
+  const handleContact = (e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const addr = ['admin', 'wcko.io'].join('@');
+    const subject = encodeURIComponent('WCKO feedback');
+    window.location.href = `mailto:${addr}?subject=${subject}`;
+  };
+
   return (
     <footer className="text-center text-[10px] text-gray-400 py-4 px-4">
       WCKO · scenarios saved to your browser · not affiliated with or endorsed by FIFA
+      <span aria-hidden="true"> · </span>
+      <a
+        href="#contact"
+        onClick={handleContact}
+        className="underline hover:text-gray-600"
+        title="Send feedback or report a bug"
+      >
+        Feedback
+      </a>
     </footer>
   );
 }
