@@ -101,7 +101,7 @@ export function Footer() {
 
   return (
     <footer className="text-center text-[10px] text-gray-400 py-4 px-4">
-      WCKO · scenarios saved to your browser · not affiliated with or endorsed by FIFA
+      WCKO · scenarios saved to your browser
       <span aria-hidden="true"> · </span>
       <a
         href="#contact"
