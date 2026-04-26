@@ -4,8 +4,9 @@ import { ROUND_LABEL } from '../data/bracket';
 import { TEAM_BY_CODE } from '../data/teams';
 import { eligibleForMatchSide } from '../logic/eligibility';
 import { collectSubtreeByRound } from '../logic/paths';
-import type { MatchId, Round, SlotSide, TeamCode } from '../types';
+import type { DropTargetData, MatchId, Round, SlotSide, TeamCode } from '../types';
 import { FlagImg } from './FlagImg';
+import { LockBadge } from './LockBadge';
 
 interface Props {
   matchId: MatchId;
@@ -54,9 +55,10 @@ export function RoundMatchBox({
   }, [draggedTeam, opponentFeederRoot, analyzedTeam]);
 
   const dropId = `oppslot:${matchId}`;
+  const dropData: DropTargetData = { kind: 'oppslot', roundMatchId: matchId };
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: dropId,
-    data: { kind: 'oppslot', roundMatchId: matchId },
+    data: dropData,
     disabled: !opponentFeederRoot || !draggedTeam || !draggedFitsOpponent,
   });
 
@@ -64,15 +66,7 @@ export function RoundMatchBox({
     <div className="flex items-center gap-2 px-2 py-1.5 min-h-[28px] text-xs bg-blue-50 border border-blue-200">
       <FlagImg code={analyzedTeam} />
       <span className="flex-1 truncate font-medium">{TEAM_BY_CODE[analyzedTeam].name}</span>
-      <span
-        className="text-blue-600 flex-shrink-0"
-        title="Your analyzed team — locked across every round"
-        aria-label="Your team — locked"
-      >
-        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
-        </svg>
-      </span>
+      <LockBadge />
     </div>
   );
 

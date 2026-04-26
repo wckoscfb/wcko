@@ -33,6 +33,7 @@ import { defaultScenario } from './state/scenario';
 import { getScenarioFromUrl } from './state/shareLink';
 import { loadAllScenarios, saveAllScenarios } from './state/storage';
 import type {
+  DropTargetData,
   GroupFinish,
   MatchId,
   R32SlotPosition,
@@ -194,46 +195,56 @@ export default function App() {
     if (!over) return;
 
     const team = active.data.current?.team as TeamCode | undefined;
-    const target = over.data.current as {
-      kind?: 'oppslot';
-      matchId?: MatchId;
-      side?: SlotSide;
-      roundMatchId?: MatchId;
-    } | undefined;
-    if (!team) return;
+    const target = over.data.current as DropTargetData | undefined;
+    if (!team || !target) return;
 
-    // R16+ "your match" opponent slot: resolve to a specific R32 leaf in the
-    // opponent feeder subtree where this team's group / finish position fits.
-    let matchId = target?.matchId;
-    let side = target?.side;
-    if (target?.kind === 'oppslot' && target.roundMatchId && opponentFeederRoots) {
-      // Find which round this round-match belongs to
-      let feederRoot: MatchId | null = null;
-      for (const r of ROUND_ORDER) {
-        if (roundMatches?.[r] === target.roundMatchId) {
-          feederRoot = opponentFeederRoots[r] ?? null;
-          break;
-        }
-      }
-      if (!feederRoot) return;
-      // Walk R32 leaves in the feeder subtree, pick the first eligible (matchId, side)
-      const subtree = collectSubtreeByRound(feederRoot);
-      let resolved: { matchId: MatchId; side: SlotSide } | null = null;
-      for (const leafMid of [...subtree.R32].sort()) {
-        for (const s of ['A', 'B'] as const) {
-          if (eligibleForMatchSide(leafMid, s).has(team)) {
-            resolved = { matchId: leafMid, side: s };
+    // Resolve every drop-target kind down to a concrete (matchId, side) pair.
+    // Switching on `target.kind` lets TS catch any new drop kind that isn't
+    // handled here.
+    let matchId: MatchId;
+    let side: SlotSide;
+    switch (target.kind) {
+      case 'slot':
+        matchId = target.matchId;
+        side = target.side;
+        break;
+      case 'oppslot': {
+        // The R16+ "your match" opponent slot resolves at drop time to the
+        // R32 leaf in the opponent feeder subtree where this team's
+        // group / finish position fits.
+        if (!opponentFeederRoots) return;
+        let feederRoot: MatchId | null = null;
+        for (const r of ROUND_ORDER) {
+          if (roundMatches?.[r] === target.roundMatchId) {
+            feederRoot = opponentFeederRoots[r] ?? null;
             break;
           }
         }
-        if (resolved) break;
+        if (!feederRoot) return;
+        const subtree = collectSubtreeByRound(feederRoot);
+        let resolved: { matchId: MatchId; side: SlotSide } | null = null;
+        for (const leafMid of [...subtree.R32].sort()) {
+          for (const s of ['A', 'B'] as const) {
+            if (eligibleForMatchSide(leafMid, s).has(team)) {
+              resolved = { matchId: leafMid, side: s };
+              break;
+            }
+          }
+          if (resolved) break;
+        }
+        if (!resolved) return;
+        matchId = resolved.matchId;
+        side = resolved.side;
+        break;
       }
-      if (!resolved) return;
-      matchId = resolved.matchId;
-      side = resolved.side;
+      default: {
+        // Exhaustiveness check — TypeScript flags this if a new DropTargetData
+        // variant is added without a matching case above.
+        const _exhaustive: never = target;
+        void _exhaustive;
+        return;
+      }
     }
-
-    if (!matchId || !side) return;
 
     // Check eligibility (defense in depth — useDroppable should already filter)
     if (!eligibleForMatchSide(matchId, side).has(team)) return;

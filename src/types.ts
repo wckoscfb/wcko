@@ -41,3 +41,18 @@ export interface Scenario {
 }
 
 export type WinnerDist = Map<TeamCode, number>;
+
+/**
+ * Discriminated union for every kind of drop target the bracket UI exposes.
+ * Attached to dnd-kit's `useDroppable({ data: ... })`. Reading the data in
+ * the global drop handler narrows on `kind` so adding a new drop type is a
+ * compile error until handleDragEnd handles it.
+ */
+export type DropTargetData =
+  /** A specific R32 slot — accepts a team directly. */
+  | { kind: 'slot'; matchId: MatchId; side: SlotSide }
+  /**
+   * The "your match" opponent slot on R16+ round cards. Drops resolve at
+   * runtime to the eligible R32 leaf in the opponent feeder subtree.
+   */
+  | { kind: 'oppslot'; roundMatchId: MatchId };

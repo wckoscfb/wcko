@@ -5,8 +5,9 @@ import { TEAM_BY_CODE } from '../data/teams';
 import { bradleyTerryTopWins } from '../data/odds';
 import { eligibleForMatchSide } from '../logic/eligibility';
 import { matchIsOneVsThird } from '../logic/probability';
-import type { MatchId, SlotSide, TeamCode } from '../types';
+import type { DropTargetData, MatchId, SlotSide, TeamCode } from '../types';
 import { FlagImg } from './FlagImg';
+import { LockBadge } from './LockBadge';
 
 export interface MatchBoxProps {
   matchId: MatchId;
@@ -53,9 +54,10 @@ function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estim
 
   // Drop target
   const dropId = `slot:${matchId}:${side}`;
+  const dropData: DropTargetData = { kind: 'slot', matchId, side };
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: dropId,
-    data: { matchId, side },
+    data: dropData,
     disabled: isLocked || (!!draggedTeam && !canDrop),
   });
 
@@ -96,15 +98,7 @@ function Slot({ matchId, side, placements, draggedTeam, onClear, isLocked, estim
             <span className="flex-1 truncate">{TEAM_BY_CODE[placed].name}</span>
           </div>
           {isLocked ? (
-            <span
-              className="text-blue-600 flex-shrink-0"
-              title="Your analyzed team — locked across every round"
-              aria-label="Your team — locked"
-            >
-              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
-              </svg>
-            </span>
+            <LockBadge />
           ) : (
             <button
               onClick={() => onClear(matchId, side)}
