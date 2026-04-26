@@ -102,8 +102,8 @@ export const STRINGS = {
   'slot.thirds_any':                 { en: 'Any 3° team from {groups} — drop a flag to specify', es: 'Cualquier 3° de {groups} — suelta una bandera para concretar', fr: 'Toute 3° parmi {groups} — déposez un drapeau pour préciser', pt: 'Qualquer 3° de {groups} — largue uma bandeira para concretizar' },
 
   // ── Footer ────────────────────────────────────────────────────────────
-  'footer.tagline':                  { en: 'WCKO · scenarios saved to your browser', es: 'WCKO · escenarios guardados en tu navegador', fr: 'WCKO · scénarios enregistrés dans votre navigateur', pt: 'WCKO · cenários guardados no seu navegador' },
-  'footer.feedback':                 { en: 'Feedback',                 es: 'Comentarios',             fr: 'Commentaires',            pt: 'Comentários' },
+  'footer.tagline':                  { en: 'Visualize WC knockout stage', es: 'Visualiza la fase eliminatoria del Mundial', fr: 'Visualisez la phase à élimination de la Coupe du Monde', pt: 'Visualize a fase eliminatória do Mundial' },
+  'footer.feedback':                 { en: 'Contact / Feedback',       es: 'Contacto / Comentarios',  fr: 'Contact / Commentaires',  pt: 'Contacto / Comentários' },
   'footer.feedback_title':           { en: 'Send feedback or report a bug', es: 'Envía comentarios o reporta un error', fr: 'Envoyez vos commentaires ou signalez un bug', pt: 'Envie comentários ou reporte um erro' },
   'footer.email_subject':            { en: 'WCKO feedback',            es: 'Comentarios WCKO',        fr: 'Commentaires WCKO',       pt: 'Comentários WCKO' },
 
