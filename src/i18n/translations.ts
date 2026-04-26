@@ -61,8 +61,8 @@ export const STRINGS = {
   'round.lock_title':                { en: 'Your analyzed team — locked across every round', es: 'Tu equipo analizado — fijado en todas las rondas', fr: 'Votre équipe analysée — verrouillée à chaque tour', pt: 'A sua equipa analisada — fixada em todas as rondas' },
 
   // ── Match box ──────────────────────────────────────────────────────────
-  'match.top_wins':                  { en: '% top wins:',              es: '% gana arriba:',          fr: '% victoire haut :',       pt: '% vence cima:' },
-  'match.top_wins_title':            { en: '% chance the TOP slot team wins this match', es: '% de que gane el equipo de arriba', fr: '% de victoire de l\'équipe du haut', pt: '% de vitória da equipa de cima' },
+  'match.top_wins':                  { en: '% Home Team wins:',        es: '% gana el local:',        fr: '% victoire à domicile :', pt: '% vitória da casa:' },
+  'match.top_wins_title':            { en: '% chance the Home Team wins this match', es: '% de que gane el equipo local', fr: '% de victoire de l\'équipe à domicile', pt: '% de vitória da equipa da casa' },
   'match.auto_one':                  { en: 'auto→1°',                  es: 'auto→1°',                 fr: 'auto→1°',                 pt: 'auto→1°' },
   'match.auto_one_title':            { en: '1° vs 3° auto-resolves to 1° unless contradicted', es: '1° vs 3° se resuelve a 1° salvo que se indique lo contrario', fr: '1° vs 3° favorise le 1° par défaut sauf indication contraire', pt: '1° vs 3° resolve a favor do 1° salvo indicação em contrário' },
   'match.estimate_top_title':        { en: 'Most likely opponent based on group-stage simulation. Drag a specific team here to lock in a different match-up.', es: 'Rival más probable según la simulación de la fase de grupos. Arrastra otro equipo aquí para fijar un cruce distinto.', fr: 'Adversaire le plus probable selon la simulation de la phase de groupes. Faites glisser une autre équipe ici pour fixer un duel différent.', pt: 'Adversário mais provável segundo a simulação da fase de grupos. Arraste outra equipa para aqui para fixar um confronto diferente.' },
