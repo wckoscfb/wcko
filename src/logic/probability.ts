@@ -54,9 +54,35 @@ export function computeWinnerDistribution(
   placements: Record<string, TeamCode>,
   odds: Record<MatchId, string>,
   useEstimatedOdds: boolean = true,
+  excludeTeams?: Set<TeamCode>,
 ): WinnerDist {
   const leafLevel = determineLeafLevel(rootMatchId, placements);
-  return computeAtLevel(rootMatchId, placements, odds, leafLevel, useEstimatedOdds);
+  return computeAtLevel(rootMatchId, placements, odds, leafLevel, useEstimatedOdds, excludeTeams);
+}
+
+/**
+ * Filter excluded teams out of an estimated group/thirds distribution and
+ * re-normalize the remaining mass to sum to 1. Used to express the constraint
+ * "team T is locked at a different slot, so T cannot fill THIS empty slot".
+ *
+ * Approximation: the true conditional distribution would re-run the underlying
+ * group simulation with the constraint baked in. We instead drop T's mass and
+ * rescale — close enough in practice and avoids a full re-simulation per slot.
+ */
+export function withoutExcluded(dist: WinnerDist, excludeTeams: Set<TeamCode> | undefined): WinnerDist {
+  if (!excludeTeams || excludeTeams.size === 0) return dist;
+  const out = new Map<TeamCode, number>();
+  let kept = 0;
+  for (const [team, p] of dist) {
+    if (!excludeTeams.has(team)) {
+      out.set(team, p);
+      kept += p;
+    }
+  }
+  if (kept <= 0) return new Map();
+  if (kept >= 1) return out; // nothing to renormalize
+  for (const [k, v] of out) out.set(k, v / kept);
+  return out;
 }
 
 function computeAtLevel(
@@ -65,6 +91,7 @@ function computeAtLevel(
   odds: Record<MatchId, string>,
   leafLevel: Round | null,
   useEstimatedOdds: boolean,
+  excludeTeams?: Set<TeamCode>,
 ): WinnerDist {
   const m = MATCHES[rootMatchId];
   const matchRound = ROUND_OF[rootMatchId];
@@ -96,7 +123,7 @@ function computeAtLevel(
       const placed = placements[slotKey];
       if (placed) return new Map([[placed, 1]]);
       if (slot.kind === 'winnerOf') {
-        const upstream = computeAtLevel(slot.matchId, placements, odds, leafLevel, useEstimatedOdds);
+        const upstream = computeAtLevel(slot.matchId, placements, odds, leafLevel, useEstimatedOdds, excludeTeams);
         if (upstream.size > 0) return upstream;
         return new Map();
       }
@@ -104,10 +131,10 @@ function computeAtLevel(
       // Manual mode → empty slot contributes empty distribution.
       if (!useEstimatedOdds) return new Map();
       if (slot.kind === 'thirds') {
-        return thirdsCandidateDistribution(slot.groups);
+        return withoutExcluded(thirdsCandidateDistribution(slot.groups), excludeTeams);
       }
       if (slot.kind === 'group') {
-        return positionProbabilities(slot.group, slot.pos as 1 | 2);
+        return withoutExcluded(positionProbabilities(slot.group, slot.pos as 1 | 2), excludeTeams);
       }
       return new Map();
     }
@@ -115,7 +142,14 @@ function computeAtLevel(
     botDist = distFor(m.B, `${rootMatchId}.B`);
   }
 
-  return combineSlotDistributions(topDist, botDist, m, rootMatchId, odds, useEstimatedOdds);
+  const result = combineSlotDistributions(topDist, botDist, m, rootMatchId, odds, useEstimatedOdds);
+  // Defense in depth: even if the team somehow leaked into a placement during
+  // upstream propagation (e.g. a future feature places teams elsewhere), drop
+  // them from the final distribution.
+  if (excludeTeams && excludeTeams.size > 0) {
+    for (const t of excludeTeams) result.delete(t);
+  }
+  return result;
 }
 
 function combineSlotDistributions(
@@ -221,6 +255,7 @@ export function computeRoundNOpponentDist(
   placements: Record<string, TeamCode>,
   odds: Record<MatchId, string>,
   useEstimatedOdds: boolean = true,
+  excludeTeams?: Set<TeamCode>,
 ): WinnerDist {
   if (round === 'R32') {
     const oppSide: 'A' | 'B' = analyzedSide === 'A' ? 'B' : 'A';
@@ -229,15 +264,15 @@ export function computeRoundNOpponentDist(
     if (!useEstimatedOdds) return new Map();
     const slot = MATCHES[roundMatchId][oppSide];
     if (slot.kind === 'group') {
-      return positionProbabilities(slot.group, slot.pos as 1 | 2);
+      return withoutExcluded(positionProbabilities(slot.group, slot.pos as 1 | 2), excludeTeams);
     }
     if (slot.kind === 'thirds') {
-      return thirdsCandidateDistribution(slot.groups);
+      return withoutExcluded(thirdsCandidateDistribution(slot.groups), excludeTeams);
     }
     return new Map();
   }
   if (opponentFeederRoot) {
-    return computeWinnerDistribution(opponentFeederRoot, placements, odds, useEstimatedOdds);
+    return computeWinnerDistribution(opponentFeederRoot, placements, odds, useEstimatedOdds, excludeTeams);
   }
   return new Map();
 }
@@ -269,13 +304,14 @@ export function computeSurvivalChain(
   placements: Record<string, TeamCode>,
   odds: Record<MatchId, string>,
   useEstimatedOdds: boolean = true,
+  excludeTeams?: Set<TeamCode>,
 ): Record<Round, number> {
   const result: Partial<Record<Round, number>> = {};
   for (const r of ROUND_ORDER) {
     const matchId = roundMatches[r];
     const side = analyzedSideAt(matchId);
     const oppDist = computeRoundNOpponentDist(
-      r, matchId, side, opponentFeederRoots[r], placements, odds, useEstimatedOdds,
+      r, matchId, side, opponentFeederRoots[r], placements, odds, useEstimatedOdds, excludeTeams,
     );
     result[r] = expectedWinProb(analyzedTeam, oppDist);
   }

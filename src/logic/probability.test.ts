@@ -149,6 +149,49 @@ describe('computeWinnerDistribution', () => {
   });
 });
 
+describe('analyzed team must never appear as their own opponent', () => {
+  // Spain is in group H. At 2°H, Spain's locked R32 slot is G86.B.
+  // Her path: G86 -> G95 -> G100 -> G102 -> G104. Final opponent feeder is G101,
+  // whose subtree includes G84 (1°H) and several thirds slots whose eligible
+  // groups list 'H'. Without an exclusion filter, Spain shows up as her own
+  // Final opponent at ~42%.
+  test('Spain at 2°H — Spain is NOT in the Final opponent distribution', () => {
+    const dist = computeWinnerDistribution(
+      'G101', {}, {}, true,
+      new Set<TeamCode>(['ESP' as TeamCode]),
+    );
+    expect(dist.has('ESP' as TeamCode)).toBeFalsy();
+  });
+
+  test('exclude set wipes a team from any group/thirds slot estimate', () => {
+    // Same idea, generalized: the opponent feeder for Brazil's R16 (1°C, G76.A)
+    // is G78. G78.A = 2°E and G78.B = 2°I — neither involves group C, so
+    // excluding BRA shouldn't change the distribution shape but BRA should
+    // not be in it either way (which we also assert).
+    const baseline = computeWinnerDistribution('G78', {}, {}, true);
+    const filtered = computeWinnerDistribution(
+      'G78', {}, {}, true,
+      new Set<TeamCode>(['BRA' as TeamCode]),
+    );
+    expect(baseline.has('BRA' as TeamCode)).toBeFalsy();
+    expect(filtered.has('BRA' as TeamCode)).toBeFalsy();
+  });
+
+  test('exclude set re-normalizes the remaining mass to ~1', () => {
+    // Take a subtree where Germany IS a possible occupant (G89 has G74 with
+    // 1°E = Germany), then exclude Germany and verify the remaining mass
+    // still sums to ~1.
+    const dist = computeWinnerDistribution(
+      'G89', {}, {}, true,
+      new Set<TeamCode>(['GER' as TeamCode]),
+    );
+    expect(dist.has('GER' as TeamCode)).toBeFalsy();
+    let s = 0;
+    for (const v of dist.values()) s += v;
+    expect(s).toBeCloseTo(1, 2);
+  });
+});
+
 describe('computeRoundNOpponentDist', () => {
   test('R32 with empty opp slot + estimation OFF → empty', () => {
     const dist = computeRoundNOpponentDist('R32', 'G74', 'A', null, {}, {}, false);

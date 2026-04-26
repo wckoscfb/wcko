@@ -144,6 +144,9 @@ export default function App() {
       scenario.placements,
       scenario.odds,
       scenario.useEstimatedOdds,
+      // Exclude the analyzed team from opponent estimation — they're locked
+      // at their own R32 slot and can't simultaneously fill any other.
+      new Set([scenario.analyzedTeam]),
     );
   }, [
     scenario.analyzedTeam, roundMatches, opponentFeederRoots, analyzedPath, r32Match,

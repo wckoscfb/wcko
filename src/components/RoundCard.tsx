@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { MATCHES, ROUND_LABEL, TREE, slotLabel } from '../data/bracket';
 import { positionProbabilities, thirdsCandidateDistribution } from '../data/odds';
-import { computeWinnerDistribution, determineLeafLevel, sortedDist } from '../logic/probability';
+import { computeWinnerDistribution, determineLeafLevel, sortedDist, withoutExcluded } from '../logic/probability';
 import type { Match, MatchId, Round, SlotSide, TeamCode } from '../types';
 import { MatchBox } from './MatchBox';
 import { OpponentFeederTree } from './OpponentFeederTree';
@@ -47,6 +47,10 @@ export function RoundCard({
   const m = MATCHES[roundMatchId];
 
   const opponentDist = useMemo(() => {
+    // The analyzed team is locked at their R32 slot, so they CANNOT also fill
+    // any other group/thirds slot in the bracket. Excluding them prevents the
+    // "Spain at 2°H predicted as her own Final opponent" class of bug.
+    const exclude = new Set<TeamCode>([analyzedTeam]);
     if (round === 'R32') {
       const oppSide: SlotSide = analyzedSide === 'A' ? 'B' : 'A';
       const placed = placements[`${roundMatchId}.${oppSide}`];
@@ -55,17 +59,19 @@ export function RoundCard({
       if (!useEstimatedOdds) return new Map<TeamCode, number>();
       const slot = m[oppSide];
       if (slot.kind === 'group') {
-        return positionProbabilities(slot.group, slot.pos as 1 | 2);
+        // Filtering not strictly needed for R32 (analyzed team is in a different
+        // group from the opponent slot) but keep it for consistency.
+        return withoutExcluded(positionProbabilities(slot.group, slot.pos as 1 | 2), exclude);
       }
       if (slot.kind === 'thirds') {
-        return thirdsCandidateDistribution(slot.groups);
+        return withoutExcluded(thirdsCandidateDistribution(slot.groups), exclude);
       }
       return new Map<TeamCode, number>();
     } else if (opponentFeederRoot) {
-      return computeWinnerDistribution(opponentFeederRoot, placements, odds, useEstimatedOdds);
+      return computeWinnerDistribution(opponentFeederRoot, placements, odds, useEstimatedOdds, exclude);
     }
     return new Map<TeamCode, number>();
-  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds, useEstimatedOdds, m]);
+  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds, useEstimatedOdds, m, analyzedTeam]);
 
   // Which round level is the opponent calculation actually using?
   // Drives the "With this R32:" / "With this R16:" label in ResolvedOpponent.
