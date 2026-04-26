@@ -1,4 +1,4 @@
-import type { Match, MatchId, Round, SlotSide, SlotSpec } from '../types';
+import type { Match, MatchId, Round, SlotSpec } from '../types';
 
 // R32 match slot specs (G76 corrected to 1°C vs 2°F per spec note in §7.2)
 export const R32: Record<MatchId, Match> = {
@@ -39,12 +39,11 @@ export const TREE: Record<MatchId, [MatchId, MatchId]> = {
   G104: ['G101', 'G102'],
 };
 
-// child -> parent and side it occupies in parent
+// child -> parent (used to walk a match up to the Final).
 export const PARENT: Record<MatchId, MatchId> = {};
-export const SIDE_OF: Record<MatchId, SlotSide> = {};
 for (const [parent, [a, b]] of Object.entries(TREE)) {
-  PARENT[a] = parent; SIDE_OF[a] = 'A';
-  PARENT[b] = parent; SIDE_OF[b] = 'B';
+  PARENT[a] = parent;
+  PARENT[b] = parent;
 }
 
 // Round of each match

@@ -76,7 +76,7 @@ describe('simulateGroup', () => {
   test('per-team probabilities sum to 1 (team always finishes somewhere)', () => {
     for (const g of Object.keys(GROUPS) as Array<keyof typeof GROUPS>) {
       const sim = simulateGroup(g);
-      for (const [team, probs] of sim) {
+      for (const [, probs] of sim) {
         const sum = probs.reduce((a, b) => a + b, 0);
         expect(sum).toBeCloseTo(1, 5);
       }

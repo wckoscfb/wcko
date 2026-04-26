@@ -1,6 +1,5 @@
 import { describe, expect, test } from '../../tests/runner';
-import { MATCHES, R32, ROUND_OF, TREE } from '../data/bracket';
-import { GROUPS } from '../data/teams';
+import { R32 } from '../data/bracket';
 import { eligibleForMatchSide } from './eligibility';
 import { collectSubtreeByRound } from './paths';
 import {
@@ -8,7 +7,6 @@ import {
   computeSurvivalChain,
   computeWinnerDistribution,
   determineLeafLevel,
-  isDeterministic,
   matchIsOneVsThird,
   sortedDist,
 } from './probability';
@@ -283,28 +281,6 @@ describe('computeSurvivalChain', () => {
       'KSA', roundMatches, () => 'A', opponentFeederRoots, {}, {}, true,
     );
     expect(strongChain.R32).toBeGreaterThan(weakChain.R32);
-  });
-});
-
-describe('isDeterministic', () => {
-  test('empty distribution is considered deterministic (nothing to be uncertain about)', () => {
-    expect(isDeterministic(new Map())).toBeTruthy();
-  });
-
-  test('single team with prob 1 is deterministic', () => {
-    expect(isDeterministic(new Map([['ARG' as TeamCode, 1]]))).toBeTruthy();
-  });
-
-  test('single team with prob < 1 is NOT deterministic', () => {
-    expect(isDeterministic(new Map([['ARG' as TeamCode, 0.7]]))).toBeFalsy();
-  });
-
-  test('two teams is NOT deterministic', () => {
-    const d = new Map<TeamCode, number>([
-      ['ARG' as TeamCode, 0.6],
-      ['BRA' as TeamCode, 0.4],
-    ]);
-    expect(isDeterministic(d)).toBeFalsy();
   });
 });
 

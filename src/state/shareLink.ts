@@ -8,7 +8,7 @@ import { defaultScenario } from './scenario';
  * Average size for a fully-filled scenario: ~400-700 chars after encoding.
  * Well within URL length limits (~2000 chars practical max).
  */
-export function encodeScenario(s: Scenario): string {
+function encodeScenario(s: Scenario): string {
   // Strip the scenario name from shared payload — names are personal to the saver
   const payload: Scenario = { ...s, scenarioName: '' };
   const json = JSON.stringify(payload);
@@ -16,7 +16,7 @@ export function encodeScenario(s: Scenario): string {
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-export function decodeScenario(encoded: string): Scenario | null {
+function decodeScenario(encoded: string): Scenario | null {
   try {
     const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
     const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);

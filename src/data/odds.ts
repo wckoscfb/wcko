@@ -112,8 +112,8 @@ export function positionProbabilities(
   return result;
 }
 
-/** Backwards-compat alias used elsewhere. */
-export function thirdPlaceProbabilities(groupLetter: GroupLetter): Map<TeamCode, number> {
+/** Internal alias used by `thirdsCandidateDistribution` below. */
+function thirdPlaceProbabilities(groupLetter: GroupLetter): Map<TeamCode, number> {
   return positionProbabilities(groupLetter, 3);
 }
 

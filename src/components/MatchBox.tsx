@@ -9,7 +9,7 @@ import type { DropTargetData, MatchId, SlotSide, TeamCode } from '../types';
 import { FlagImg } from './FlagImg';
 import { LockBadge } from './LockBadge';
 
-export interface MatchBoxProps {
+interface MatchBoxProps {
   matchId: MatchId;
   placements: Record<string, TeamCode>;
   odds: Record<MatchId, string>;

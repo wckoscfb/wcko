@@ -218,15 +218,6 @@ function combineSlotDistributions(
   return result;
 }
 
-export function isDeterministic(dist: WinnerDist): boolean {
-  if (dist.size === 0) return true;
-  if (dist.size === 1) {
-    const v = [...dist.values()][0];
-    return Math.abs(v - 1) < 1e-9;
-  }
-  return false;
-}
-
 export function sortedDist(dist: WinnerDist): Array<[TeamCode, number]> {
   return [...dist.entries()].sort((a, b) => b[1] - a[1]);
 }
