@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Don't waste crawl budget on share-link variants — they all render the same page
+Disallow: /*?s=
+
+Sitemap: https://wcko.io/sitemap.xml

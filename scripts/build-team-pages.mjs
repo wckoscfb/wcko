@@ -164,25 +164,56 @@ function setMeta(html, attrKey, key, newContent) {
 }
 
 function customizeHtml(template, team) {
-  const title = `${team.name}'s Path to Glory — WCKO`;
-  const description = `Visualise ${team.name}'s knockout path at the 2026 World Cup. Drag opponents, set odds, share with friends.`;
+  // SEO-optimised: keyword-dense title (country + "World Cup 2026" + intent
+  // keyword) without sounding spammy. Description is similarly keyword-rich
+  // but reads naturally — the goal is humans clicking the search result, not
+  // just keyword stuffing.
+  const title = `${team.name} at World Cup 2026 — Bracket Path Predictor | WCKO`;
+  const description = `See ${team.name}'s knockout path at the 2026 World Cup. Drag opponents into every round, set odds, share scenarios. Live bookmaker odds, no signup.`;
   const url = `https://wcko.io/${team.slug}`;
   const image = `https://wcko.io/og/${team.slug}.svg`;
 
+  // Per-team JSON-LD: gives Google a clear semantic anchor (this page is
+  // ABOUT a sports team participating in a sports event) so it can rank
+  // appropriately for "{team} World Cup 2026" type queries.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: title,
+    description,
+    url,
+    inLanguage: ['en', 'es', 'fr', 'pt'],
+    primaryImageOfPage: { '@type': 'ImageObject', url: image, width: 1200, height: 630 },
+    about: {
+      '@type': 'SportsTeam',
+      name: team.name,
+      sport: 'Soccer',
+    },
+    isPartOf: { '@type': 'WebSite', name: 'WCKO', url: 'https://wcko.io/' },
+  };
+  const ldScript = `    <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n  `;
+
   let html = template;
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`);
-  html = setMeta(html, 'property', 'og:title', title);
-  html = setMeta(html, 'property', 'og:url', url);
-  html = setMeta(html, 'property', 'og:image', image);
-  html = setMeta(html, 'name', 'twitter:title', title);
-  html = setMeta(html, 'name', 'twitter:image', image);
+  html = setMeta(html, 'name',     'description', description);
+  html = setMeta(html, 'property', 'og:title',       title);
+  html = setMeta(html, 'property', 'og:description', description);
+  html = setMeta(html, 'property', 'og:url',         url);
+  html = setMeta(html, 'property', 'og:image',       image);
+  html = setMeta(html, 'name',     'twitter:title',       title);
+  html = setMeta(html, 'name',     'twitter:description', description);
+  html = setMeta(html, 'name',     'twitter:image',       image);
+  // og:locale:alternate is already in the homepage template — leave it as is
+  // so Google sees this single URL serves multiple languages.
 
-  // og:description + twitter:description aren't in the source index.html yet,
-  // so inject them just before </head> if not already present.
-  if (!/og:description/.test(html)) {
-    const inject = `    <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />\n    <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />\n  `;
-    html = html.replace('</head>', inject + '</head>');
-  }
+  // Replace the homepage's canonical with this team's canonical
+  html = html.replace(/<link rel="canonical"[^>]*\/?\s*>/i, `<link rel="canonical" href="${url}" />`);
+
+  // Inject the per-page JSON-LD just before </head> (the homepage's WebSite
+  // JSON-LD already sits in the template; this adds the per-team WebPage
+  // alongside it).
+  html = html.replace('</head>', ldScript + '</head>');
+
   return html;
 }
 
@@ -211,8 +242,31 @@ async function writeRedirects() {
   console.log(`  ✓ _redirects updated with ${TEAMS.length} team rules + SPA fallback`);
 }
 
-console.log('build-team-pages: generating per-team OG images, HTML, and redirects…');
+async function writeSitemap() {
+  const today = new Date().toISOString().slice(0, 10);
+  const urls = [
+    { loc: 'https://wcko.io/',         priority: '1.0' },
+    ...TEAMS.map(t => ({
+      loc: `https://wcko.io/${t.slug}`,
+      priority: '0.8',
+    })),
+  ];
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...urls.map(u =>
+      `  <url><loc>${u.loc}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>${u.priority}</priority></url>`
+    ),
+    '</urlset>',
+    '',
+  ].join('\n');
+  await writeFile(join(DIST, 'sitemap.xml'), xml);
+  console.log(`  ✓ sitemap.xml written with ${urls.length} URLs`);
+}
+
+console.log('build-team-pages: generating per-team OG images, HTML, redirects, sitemap…');
 await generateOgImages();
 await generateTeamPages();
 await writeRedirects();
+await writeSitemap();
 console.log('build-team-pages: done.');

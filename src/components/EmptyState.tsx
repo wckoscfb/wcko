@@ -1,4 +1,6 @@
 import type { MouseEvent } from 'react';
+import { CANONICAL_SLUG } from '../data/teamCanonicalSlugs';
+import { TEAMS } from '../data/teams';
 import { useLang, useT } from '../i18n/context';
 import type { TeamCode } from '../types';
 import { FlagImg } from './FlagImg';
@@ -33,9 +35,9 @@ export function EmptyState({ onTeamPick }: EmptyStateProps) {
 
       {/* Quick-start: tap a team to jump straight in */}
       <div className="bg-white border rounded-lg shadow-sm p-4 sm:p-5 mb-5">
-        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3 text-center">
+        <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3 text-center">
           {t('empty.quick_start')}
-        </div>
+        </h2>
         <div className="grid grid-cols-4 gap-2">
           {QUICK_START_TEAMS.map(code => (
             <button
@@ -55,9 +57,9 @@ export function EmptyState({ onTeamPick }: EmptyStateProps) {
 
       {/* How it works */}
       <div className="bg-white border rounded-lg shadow-sm p-4 sm:p-5">
-        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">
+        <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">
           {t('empty.how_it_works')}
-        </div>
+        </h2>
         <ol className="space-y-3">
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center mt-0.5">1</span>
@@ -73,6 +75,50 @@ export function EmptyState({ onTeamPick }: EmptyStateProps) {
           </li>
         </ol>
       </div>
+
+      {/* Browse-all-teams section: every team gets a real <a> link to its
+          country page. Doubles as (a) a discoverability fallback for users
+          who don't see their team in the quick-start row, and (b) crawler
+          reachability — search engines now have a path from / to every
+          /<country> page in one click, which helps the per-team pages get
+          indexed. */}
+      <section className="bg-white border rounded-lg shadow-sm p-4 sm:p-5 mt-5">
+        <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3 text-center">
+          {t('empty.browse_all')}
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-1">
+          {[...TEAMS].sort((a, b) => teamName(a.code).localeCompare(teamName(b.code))).map(team => (
+            <a
+              key={team.code}
+              href={`/${CANONICAL_SLUG[team.code]}`}
+              onClick={(e) => {
+                // Inside the SPA, prefer client-side state update over a full
+                // page reload — feels instant. Hold ⌘/Ctrl to force open in a
+                // new tab (browser default behaviour preserved).
+                if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                e.preventDefault();
+                onTeamPick(team.code);
+              }}
+              className="flex items-center gap-1.5 px-1.5 py-1 text-xs rounded hover:bg-blue-50 active:bg-blue-100 transition-colors"
+            >
+              <FlagImg code={team.code} />
+              <span className="truncate text-gray-700">{teamName(team.code)}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      {/* About section — keyword-rich content for SEO. Plain text, no fancy
+          styling, intentionally low visual weight so it doesn't distract from
+          the action above. Crawlers love this; humans skim past it. */}
+      <section className="mt-6 px-2 max-w-prose mx-auto">
+        <h2 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+          {t('empty.about_heading')}
+        </h2>
+        <p className="text-[12px] text-gray-500 leading-relaxed">
+          {t('empty.about_body')}
+        </p>
+      </section>
 
       {/* Tiny prompt below — encourages scrolling/exploration */}
       <p className="text-[11px] text-gray-400 text-center mt-6">
