@@ -19,7 +19,7 @@ export function LangSwitcher() {
       >
         {LANGS.map(l => (
           <option key={l.code} value={l.code}>
-            {l.code.toUpperCase()}
+            {l.emoji} {l.code.toUpperCase()}
           </option>
         ))}
       </select>
