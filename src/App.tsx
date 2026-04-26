@@ -32,6 +32,7 @@ import { useT } from './i18n/context';
 import { computeSurvivalChain } from './logic/probability';
 import { defaultScenario } from './state/scenario';
 import { getScenarioFromUrl } from './state/shareLink';
+import { teamFromSlug } from './state/teamSlugs';
 import { loadAllScenarios, saveAllScenarios } from './state/storage';
 import type {
   DropTargetData,
@@ -63,7 +64,10 @@ export default function App() {
   const [draggedTeam, setDraggedTeam] = useState<TeamCode | null>(null);
   const isMobile = useIsMobile();
 
-  // On mount: load saved scenarios + apply ?s=... share link if present
+  // On mount: load saved scenarios + apply ?s=... share link if present.
+  // If neither, fall back to pre-loading a team from the URL path
+  // (wcko.io/argentina, /brasil, /spain, …) so country-specific promo links
+  // land directly on a configured bracket.
   useEffect(() => {
     setSavedScenarios(loadAllScenarios());
     const fromUrl = getScenarioFromUrl();
@@ -73,6 +77,22 @@ export default function App() {
       try {
         window.history.replaceState({}, '', window.location.pathname);
       } catch { /* noop */ }
+      return;
+    }
+    // Path-based team pre-load (only if URL isn't bare '/').
+    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      const code = teamFromSlug(window.location.pathname);
+      if (code) {
+        setScenario(prev => ({
+          ...prev,
+          analyzedTeam: code,
+          // Match handleTeamChange's defaults so the bracket renders right away.
+          groupFinish: '1',
+          thirdR32: null,
+          placements: {},
+          odds: {},
+        }));
+      }
     }
   }, []);
 

@@ -1,0 +1,5 @@
+# Cloudflare Pages SPA fallback. Every unknown path serves index.html so the
+# client-side router (see src/App.tsx — teamFromSlug) can pick up team slugs
+# like /argentina, /brasil, /spain, etc. Status 200 keeps the URL intact in
+# the browser address bar (a 301/302 would change the URL).
+/*    /index.html    200
