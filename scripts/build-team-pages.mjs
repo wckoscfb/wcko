@@ -150,11 +150,17 @@ async function generateOgImages() {
 
 /** Replace one of the meta tags in the index.html string. The regex matches
  *  the `content="…"` attribute of a tag whose `property=` or `name=` equals
- *  the given key. Quote style (single vs double) is preserved. */
+ *  the given key.
+ *
+ *  index.html uses double-quoted attributes throughout, so we anchor on `"`
+ *  explicitly. (The earlier `[^"']*` version silently failed on og:title /
+ *  twitter:title because the existing content contained the apostrophe in
+ *  "team's", terminating the character class early and skipping the
+ *  replacement.) */
 function setMeta(html, attrKey, key, newContent) {
   const safe = newContent.replace(/"/g, '&quot;');
-  const re = new RegExp(`(<meta\\s+${attrKey}=["']${key}["'][^>]*content=)(["'])[^"']*\\2`, 'i');
-  return html.replace(re, `$1$2${safe}$2`);
+  const re = new RegExp(`(<meta\\s+${attrKey}="${key}"[^>]*content=)"[^"]*"`, 'i');
+  return html.replace(re, `$1"${safe}"`);
 }
 
 function customizeHtml(template, team) {
