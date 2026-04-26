@@ -134,27 +134,6 @@ export default function App() {
     return null;
   }, [opponentFeederRoots, scenario.placements, roundMatches, r32Match]);
 
-  // Per-round win probability — drives the "From here, X% to reach R16…" panel
-  const survivalChain = useMemo(() => {
-    if (!scenario.analyzedTeam || !roundMatches || !opponentFeederRoots) return null;
-    return computeSurvivalChain(
-      scenario.analyzedTeam,
-      roundMatches,
-      (matchId) => getAnalyzedSideAt(matchId, analyzedPath, r32Match),
-      opponentFeederRoots,
-      scenario.placements,
-      scenario.odds,
-      scenario.useEstimatedOdds,
-      // Exclude every placed team from opponent estimation — each one is
-      // locked at a specific (group, position) and can't simultaneously
-      // appear in any other group/thirds slot estimate.
-      excludeFromEstimates,
-    );
-  }, [
-    scenario.analyzedTeam, roundMatches, opponentFeederRoots, analyzedPath, r32Match,
-    scenario.placements, scenario.odds, scenario.useEstimatedOdds,
-  ]);
-
   // Auto-place analyzed team in their R32 slot whenever the slot changes
   useEffect(() => {
     if (!r32Match) return;
@@ -182,7 +161,30 @@ export default function App() {
   // call sites is clear: this is what to filter from group/thirds estimates.
   // The analyzed team is already in placements (auto-placed at their R32 slot
   // by the effect above) so we don't need to add them separately.
+  // MUST be declared BEFORE any useMemo that reads it — see the TDZ bug
+  // that black-screened the app when picking a team from EmptyState.
   const excludeFromEstimates = placedTeams;
+
+  // Per-round win probability — drives the "From here, X% to reach R16…" panel
+  const survivalChain = useMemo(() => {
+    if (!scenario.analyzedTeam || !roundMatches || !opponentFeederRoots) return null;
+    return computeSurvivalChain(
+      scenario.analyzedTeam,
+      roundMatches,
+      (matchId) => getAnalyzedSideAt(matchId, analyzedPath, r32Match),
+      opponentFeederRoots,
+      scenario.placements,
+      scenario.odds,
+      scenario.useEstimatedOdds,
+      // Exclude every placed team from opponent estimation — each one is
+      // locked at a specific (group, position) and can't simultaneously
+      // appear in any other group/thirds slot estimate.
+      excludeFromEstimates,
+    );
+  }, [
+    scenario.analyzedTeam, roundMatches, opponentFeederRoots, analyzedPath, r32Match,
+    scenario.placements, scenario.odds, scenario.useEstimatedOdds, excludeFromEstimates,
+  ]);
 
   /* ============== Drag-and-drop ============== */
 
