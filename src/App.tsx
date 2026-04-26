@@ -412,9 +412,11 @@ export default function App() {
                     />
                   );
                 })}
-                <Footer />
               </div>
             )}
+            {/* Footer always visible — including on EmptyState — so the
+                Feedback link is reachable from anywhere in the app. */}
+            <Footer />
           </main>
         </div>
 
