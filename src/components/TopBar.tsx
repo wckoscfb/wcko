@@ -119,6 +119,8 @@ export function TopBar({
           </select>
         </label>
       )}
+      <LangSwitcher />
+
       <button
         onClick={onClear}
         className="px-2 py-1 text-xs text-gray-600 border rounded hover:bg-gray-50"
@@ -138,7 +140,6 @@ export function TopBar({
       </label>
 
       <div className="ml-auto flex items-center gap-2 flex-wrap">
-        <LangSwitcher />
         <button
           onClick={handleShare}
           className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
