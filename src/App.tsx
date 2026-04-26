@@ -145,9 +145,10 @@ export default function App() {
       scenario.placements,
       scenario.odds,
       scenario.useEstimatedOdds,
-      // Exclude the analyzed team from opponent estimation — they're locked
-      // at their own R32 slot and can't simultaneously fill any other.
-      new Set([scenario.analyzedTeam]),
+      // Exclude every placed team from opponent estimation — each one is
+      // locked at a specific (group, position) and can't simultaneously
+      // appear in any other group/thirds slot estimate.
+      excludeFromEstimates,
     );
   }, [
     scenario.analyzedTeam, roundMatches, opponentFeederRoots, analyzedPath, r32Match,
@@ -175,6 +176,13 @@ export default function App() {
     () => new Set(Object.values(scenario.placements).filter(Boolean) as TeamCode[]),
     [scenario.placements],
   );
+
+  // Same semantics as `placedTeams` for now (every placement implies a locked
+  // group/position commitment). Kept as a separate alias so the *intent* at
+  // call sites is clear: this is what to filter from group/thirds estimates.
+  // The analyzed team is already in placements (auto-placed at their R32 slot
+  // by the effect above) so we don't need to add them separately.
+  const excludeFromEstimates = placedTeams;
 
   /* ============== Drag-and-drop ============== */
 
@@ -391,6 +399,7 @@ export default function App() {
                       placements={scenario.placements}
                       odds={scenario.odds}
                       useEstimatedOdds={scenario.useEstimatedOdds}
+                      excludeFromEstimates={excludeFromEstimates}
                       survivalChain={survivalChain}
                       hintSlotKey={hintSlotKey}
                       onClear={handleClear}

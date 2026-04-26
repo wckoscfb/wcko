@@ -190,6 +190,23 @@ describe('analyzed team must never appear as their own opponent', () => {
     for (const v of dist.values()) s += v;
     expect(s).toBeCloseTo(1, 2);
   });
+
+  test('placed team in the subtree is NOT stripped by the exclusion filter', () => {
+    // A placed team is "locked elsewhere" semantically — but if their slot is
+    // physically inside the subtree we're computing, their placement should
+    // propagate up. The exclusion is only meant to block them from filling
+    // OTHER (empty) group/thirds slots via estimation.
+    // Place Brazil at G76.A (Brazil = 1°C). G76 is in G91's subtree
+    // (G91 children: G76, G78). Computing G91 with Brazil excluded must
+    // still produce Brazil in the result via her placement.
+    const placements = place(['G76.A', 'BRA']);
+    const dist = computeWinnerDistribution(
+      'G91', placements, {}, true,
+      new Set<TeamCode>(['BRA' as TeamCode]),
+    );
+    expect(dist.has('BRA' as TeamCode)).toBeTruthy();
+    expect((dist.get('BRA' as TeamCode) ?? 0)).toBeGreaterThan(0);
+  });
 });
 
 describe('computeRoundNOpponentDist', () => {

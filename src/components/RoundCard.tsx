@@ -18,6 +18,12 @@ interface Props {
   placements: Record<string, TeamCode>;
   odds: Record<MatchId, string>;
   useEstimatedOdds: boolean;
+  /**
+   * Teams to drop from any group/thirds candidate distribution. Currently the
+   * full set of placed teams + the analyzed team — each one is locked at a
+   * specific (group, position) and can't simultaneously fill any other slot.
+   */
+  excludeFromEstimates: Set<TeamCode>;
   survivalChain: Record<Round, number> | null;
   hintSlotKey: string | null;
   onClear: (matchId: MatchId, side: SlotSide) => void;
@@ -41,37 +47,34 @@ function r32Fallback(
 
 export function RoundCard({
   round, roundMatchId, analyzedTeam, analyzedSide, opponentFeederRoot,
-  placements, odds, useEstimatedOdds, survivalChain, hintSlotKey,
+  placements, odds, useEstimatedOdds, excludeFromEstimates, survivalChain, hintSlotKey,
   onClear, onOddsChange, draggedTeam,
 }: Props) {
   const m = MATCHES[roundMatchId];
 
   const opponentDist = useMemo(() => {
-    // The analyzed team is locked at their R32 slot, so they CANNOT also fill
-    // any other group/thirds slot in the bracket. Excluding them prevents the
-    // "Spain at 2°H predicted as her own Final opponent" class of bug.
-    const exclude = new Set<TeamCode>([analyzedTeam]);
+    // Every placed team (analyzed team included) is locked at a specific
+    // (group, position) commitment — none of them can also fill any other
+    // group/thirds slot. Filtering them out prevents bugs like "Spain at 2°H
+    // predicted as her own Final opponent" and the placed-team analogue.
     if (round === 'R32') {
       const oppSide: SlotSide = analyzedSide === 'A' ? 'B' : 'A';
       const placed = placements[`${roundMatchId}.${oppSide}`];
       if (placed) return new Map<TeamCode, number>([[placed, 1]]);
-      // Empty opponent slot — only auto-estimate when toggle is ON.
       if (!useEstimatedOdds) return new Map<TeamCode, number>();
       const slot = m[oppSide];
       if (slot.kind === 'group') {
-        // Filtering not strictly needed for R32 (analyzed team is in a different
-        // group from the opponent slot) but keep it for consistency.
-        return withoutExcluded(positionProbabilities(slot.group, slot.pos as 1 | 2), exclude);
+        return withoutExcluded(positionProbabilities(slot.group, slot.pos as 1 | 2), excludeFromEstimates);
       }
       if (slot.kind === 'thirds') {
-        return withoutExcluded(thirdsCandidateDistribution(slot.groups), exclude);
+        return withoutExcluded(thirdsCandidateDistribution(slot.groups), excludeFromEstimates);
       }
       return new Map<TeamCode, number>();
     } else if (opponentFeederRoot) {
-      return computeWinnerDistribution(opponentFeederRoot, placements, odds, useEstimatedOdds, exclude);
+      return computeWinnerDistribution(opponentFeederRoot, placements, odds, useEstimatedOdds, excludeFromEstimates);
     }
     return new Map<TeamCode, number>();
-  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds, useEstimatedOdds, m, analyzedTeam]);
+  }, [round, roundMatchId, analyzedSide, opponentFeederRoot, placements, odds, useEstimatedOdds, m, excludeFromEstimates]);
 
   // Which round level is the opponent calculation actually using?
   // Drives the "With this R32:" / "With this R16:" label in ResolvedOpponent.

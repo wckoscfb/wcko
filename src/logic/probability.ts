@@ -142,14 +142,12 @@ function computeAtLevel(
     botDist = distFor(m.B, `${rootMatchId}.B`);
   }
 
-  const result = combineSlotDistributions(topDist, botDist, m, rootMatchId, odds, useEstimatedOdds);
-  // Defense in depth: even if the team somehow leaked into a placement during
-  // upstream propagation (e.g. a future feature places teams elsewhere), drop
-  // them from the final distribution.
-  if (excludeTeams && excludeTeams.size > 0) {
-    for (const t of excludeTeams) result.delete(t);
-  }
-  return result;
+  return combineSlotDistributions(topDist, botDist, m, rootMatchId, odds, useEstimatedOdds);
+  // No defensive post-filter on excludeTeams: an excluded team CAN legitimately
+  // appear in the result if they're placed inside the subtree (e.g. user puts
+  // Brazil at G76.A, then computes a deep root whose subtree includes G76 —
+  // Brazil's placement should propagate up). The exclusion is only correct
+  // INSIDE empty-slot estimates, which `distFor` already handles.
 }
 
 function combineSlotDistributions(
