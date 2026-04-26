@@ -28,7 +28,8 @@ import {
   getRoundMatches,
   resolveR32,
 } from './logic/paths';
-import { useT } from './i18n/context';
+import { CANONICAL_SLUG } from './data/teamCanonicalSlugs';
+import { useLang, useT } from './i18n/context';
 import { computeSurvivalChain } from './logic/probability';
 import { defaultScenario } from './state/scenario';
 import { getScenarioFromUrl } from './state/shareLink';
@@ -59,10 +60,45 @@ function useIsMobile(breakpoint = 768) {
 
 export default function App() {
   const t = useT();
+  const { teamName, lang } = useLang();
   const [scenario, setScenario] = useState<Scenario>(defaultScenario);
   const [savedScenarios, setSavedScenarios] = useState<Record<string, Scenario>>({});
   const [draggedTeam, setDraggedTeam] = useState<TeamCode | null>(null);
   const isMobile = useIsMobile();
+
+  // Keep <title> + URL pathname in sync with the current analyzed team. Helps:
+  //   - bookmarking and the URL-bar share button (URL reflects current team)
+  //   - tab/history stack readability
+  //   - SEO of in-app navigations (the static per-team HTML's <title> sets the
+  //     initial value; this keeps it correct as the user picks teams via the
+  //     EmptyState row or the TopBar dropdown).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const code = scenario.analyzedTeam;
+    if (code) {
+      const name = teamName(code);
+      document.title = `${name} at World Cup 2026 — Bracket Path Predictor | WCKO`;
+      const slug = CANONICAL_SLUG[code];
+      if (slug) {
+        const desired = `/${slug}`;
+        if (window.location.pathname !== desired) {
+          // replaceState (not pushState) — picking a team isn't a real
+          // navigation event, just a state change. Avoids polluting the back
+          // button with an entry per team click.
+          try {
+            window.history.replaceState({}, '', desired + window.location.search);
+          } catch { /* private mode etc. */ }
+        }
+      }
+    } else {
+      document.title = 'WCKO — World Cup 2026 Bracket Predictor & Path Visualizer';
+      if (window.location.pathname !== '/') {
+        try {
+          window.history.replaceState({}, '', '/' + window.location.search);
+        } catch { /* noop */ }
+      }
+    }
+  }, [scenario.analyzedTeam, lang, teamName]);
 
   // On mount: load saved scenarios + apply ?s=... share link if present.
   // If neither, fall back to pre-loading a team from the URL path
