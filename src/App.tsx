@@ -8,7 +8,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EmptyState, Footer } from './components/EmptyState';
 import { FlagImg } from './components/FlagImg';
 import { GroupCard } from './components/GroupCard';
@@ -66,40 +66,6 @@ export default function App() {
   const [draggedTeam, setDraggedTeam] = useState<TeamCode | null>(null);
   const isMobile = useIsMobile();
 
-  // Keep <title> + URL pathname in sync with the current analyzed team. Helps:
-  //   - bookmarking and the URL-bar share button (URL reflects current team)
-  //   - tab/history stack readability
-  //   - SEO of in-app navigations (the static per-team HTML's <title> sets the
-  //     initial value; this keeps it correct as the user picks teams via the
-  //     EmptyState row or the TopBar dropdown).
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const code = scenario.analyzedTeam;
-    if (code) {
-      const name = teamName(code);
-      document.title = `${name} at World Cup 2026 — Bracket Path Predictor | WCKO`;
-      const slug = CANONICAL_SLUG[code];
-      if (slug) {
-        const desired = `/${slug}`;
-        if (window.location.pathname !== desired) {
-          // replaceState (not pushState) — picking a team isn't a real
-          // navigation event, just a state change. Avoids polluting the back
-          // button with an entry per team click.
-          try {
-            window.history.replaceState({}, '', desired + window.location.search);
-          } catch { /* private mode etc. */ }
-        }
-      }
-    } else {
-      document.title = 'WCKO — World Cup 2026 Bracket Predictor & Path Visualizer';
-      if (window.location.pathname !== '/') {
-        try {
-          window.history.replaceState({}, '', '/' + window.location.search);
-        } catch { /* noop */ }
-      }
-    }
-  }, [scenario.analyzedTeam, lang, teamName]);
-
   // On mount: load saved scenarios + apply ?s=... share link if present.
   // If neither, fall back to pre-loading a team from the URL path
   // (wcko.io/argentina, /brasil, /spain, …) so country-specific promo links
@@ -131,6 +97,52 @@ export default function App() {
       }
     }
   }, []);
+
+  // Keep <title> + URL pathname in sync with the current analyzed team. Helps:
+  //   - bookmarking and the URL-bar share button (URL reflects current team)
+  //   - tab/history stack readability
+  //   - SEO of in-app navigations (the static per-team HTML's <title> sets the
+  //     initial value; this keeps it correct as the user picks teams via the
+  //     EmptyState row or the TopBar dropdown).
+  //
+  // CRITICAL: this effect must SKIP its first run. Otherwise on initial mount
+  // for a deep-link like /spain, scenario.analyzedTeam is still null (the
+  // mount effect above hasn't applied its setScenario yet), and the else-
+  // branch would wipe the URL back to '/' before the mount effect can read
+  // it. Net effect: deep links land on EmptyState instead of the team page.
+  // Skipping the first run lets the mount effect win the race.
+  const urlSyncReady = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!urlSyncReady.current) {
+      urlSyncReady.current = true;
+      return;
+    }
+    const code = scenario.analyzedTeam;
+    if (code) {
+      const name = teamName(code);
+      document.title = `${name} at World Cup 2026 — Bracket Path Predictor | WCKO`;
+      const slug = CANONICAL_SLUG[code];
+      if (slug) {
+        const desired = `/${slug}`;
+        if (window.location.pathname !== desired) {
+          // replaceState (not pushState) — picking a team isn't a real
+          // navigation event, just a state change. Avoids polluting the back
+          // button with an entry per team click.
+          try {
+            window.history.replaceState({}, '', desired + window.location.search);
+          } catch { /* private mode etc. */ }
+        }
+      }
+    } else {
+      document.title = 'WCKO — World Cup 2026 Bracket Predictor & Path Visualizer';
+      if (window.location.pathname !== '/') {
+        try {
+          window.history.replaceState({}, '', '/' + window.location.search);
+        } catch { /* noop */ }
+      }
+    }
+  }, [scenario.analyzedTeam, lang, teamName]);
 
   const setS = useCallback((updater: Partial<Scenario> | ((prev: Scenario) => Scenario)) => {
     setScenario(prev => (typeof updater === 'function' ? updater(prev) : { ...prev, ...updater }));
