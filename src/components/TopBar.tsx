@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { TEAMS, flagEmoji } from '../data/teams';
+import { GROUPS, flagEmoji } from '../data/teams';
 import { useLang, useT } from '../i18n/context';
 import { buildShareUrl } from '../state/shareLink';
-import type { GroupFinish, MatchId, R32SlotPosition, Scenario, TeamCode } from '../types';
+import type { GroupFinish, GroupLetter, MatchId, R32SlotPosition, Scenario, TeamCode } from '../types';
 import { LangSwitcher } from './LangSwitcher';
 
 interface Props {
@@ -84,10 +84,19 @@ export function TopBar({
         className="border rounded px-2 py-1 text-sm min-w-0 max-w-[180px] sm:max-w-none"
       >
         <option value="">— {t('topbar.team_placeholder')} —</option>
-        {TEAMS.map(team => (
-          <option key={team.code} value={team.code}>
-            {flagEmoji(team.code)} {teamName(team.code)} ({t('group.label', { letter: team.group })})
-          </option>
+        {/* <optgroup> renders as a bold separator with the group label in
+            every native picker (including iOS / Android), so the 48 teams
+            are scannable as 12 visual blocks of 4 — same intent as
+            alternating background colours but actually portable.
+            (Native <option> background-color is mostly ignored on mobile.) */}
+        {(Object.keys(GROUPS) as GroupLetter[]).map(g => (
+          <optgroup key={g} label={t('group.label', { letter: g })}>
+            {GROUPS[g].map(code => (
+              <option key={code} value={code}>
+                {flagEmoji(code)} {teamName(code)}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
       {scenario.analyzedTeam && (
