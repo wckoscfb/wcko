@@ -63,3 +63,33 @@ export function flagUrl(code: TeamCode): string {
   const iso = ISO2[code];
   return iso ? `https://flagcdn.com/w40/${iso}.png` : '';
 }
+
+/**
+ * Unicode flag emoji for a team. Used in the team-picker <select> (native
+ * HTML <option> elements don't accept <img>, but Unicode flag glyphs work
+ * everywhere modern: iOS, Android, macOS, recent Windows).
+ *
+ * Standard 2-letter ISO codes → pair of regional-indicator characters:
+ *   "ar" → 🇦🇷 (regional A + regional R).
+ *
+ * Subdivision codes (gb-sct, gb-eng) → emoji "tag sequence" — supported on
+ * iOS/macOS/Android/recent Windows. On older systems falls back to the
+ * generic black-flag glyph 🏴.
+ */
+export function flagEmoji(code: TeamCode): string {
+  const iso = ISO2[code];
+  if (!iso) return '';
+  if (iso.length === 2) {
+    return iso
+      .toUpperCase()
+      .split('')
+      .map(c => String.fromCodePoint(0x1F1E6 + (c.charCodeAt(0) - 65)))
+      .join('');
+  }
+  // Tag sequences for the four UK home nations are well-defined in Emoji 11.
+  // Currently we only need Scotland and England; if Wales/Northern Ireland
+  // ever join, add them here the same way.
+  if (iso === 'gb-sct') return '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}';
+  if (iso === 'gb-eng') return '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
+  return '\u{1F3F3}'; // white flag fallback for any future special case
+}

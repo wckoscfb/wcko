@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TEAMS } from '../data/teams';
+import { TEAMS, flagEmoji } from '../data/teams';
 import { useLang, useT } from '../i18n/context';
 import { buildShareUrl } from '../state/shareLink';
 import type { GroupFinish, MatchId, R32SlotPosition, Scenario, TeamCode } from '../types';
@@ -86,7 +86,7 @@ export function TopBar({
         <option value="">— {t('topbar.team_placeholder')} —</option>
         {TEAMS.map(team => (
           <option key={team.code} value={team.code}>
-            {teamName(team.code)} ({t('group.label', { letter: team.group })})
+            {flagEmoji(team.code)} {teamName(team.code)} ({t('group.label', { letter: team.group })})
           </option>
         ))}
       </select>
