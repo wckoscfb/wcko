@@ -1,5 +1,9 @@
-# Cloudflare Pages SPA fallback. Every unknown path serves index.html so the
-# client-side router (see src/App.tsx — teamFromSlug) can pick up team slugs
-# like /argentina, /brasil, /spain, etc. Status 200 keeps the URL intact in
-# the browser address bar (a 301/302 would change the URL).
-/*    /index.html    200
+# Cloudflare Pages SPA fallback is configured automatically via the new
+# Workers+Assets pipeline (`not_found_handling: "single-page-application"`).
+# An explicit `/*  /index.html  200` catch-all here would be rejected by
+# Wrangler as an "infinite loop" (code 10021), so we leave it out.
+#
+# This file is normally OVERWRITTEN by scripts/build-team-pages.mjs at build
+# time with the per-country rewrite rules. It exists in source mostly as a
+# placeholder so Vite has something to copy if the post-build script is
+# skipped during local development.
