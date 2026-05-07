@@ -15,3 +15,9 @@ dist-ssr
 # Auto-emitted from vite.config.ts by `tsc -b` — Vite uses the .ts source directly
 vite.config.d.ts
 vite.config.js
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
